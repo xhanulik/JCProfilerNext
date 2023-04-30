@@ -7,6 +7,7 @@
     "visaJar": "https://deadcode.me/mvn/visa/openplatform/javacard/1.0/javacard-1.0.jar",
     "tests": [
         {
+<<<<<<< HEAD
             "name": "belgian-e-id",
             "repo": "https://github.com/amoerie/belgian-e-id",
             "path": "workspace/JavaCard/src",
@@ -2235,6 +2236,9 @@
                 }
 =======
             "name": "JCMathLib",
+=======
+            "name": "JCMathLib-int",
+>>>>>>> bf698c2 (Add tests for bignat operations)
             "repo": "https://github.com/dufkan/JCMathLib",
             "path": "applet/src",
             "jckit": "305u1",
@@ -2721,6 +2725,178 @@
                             "inputFile": "inputs/ECPoints.txt"
 =======
 >>>>>>> d79b5f6 (Setup python tests for testing repo)
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "JCMathLib-bignat",
+            "repo": "https://github.com/dufkan/JCMathLib",
+            "path": "applet/src",
+            "jckit": "305u1",
+            "remove": [
+                "applet/src/main/java/main/Run.java",
+                "applet/src/main/java/main/RunExample.java",
+                "applet/src/test/java/tests/BaseTest.java",
+                "applet/src/test/java/tests/JCMathLibTest.java"
+            ],
+            "fixup": [
+                {
+                    "reason": "Instrumentation: already contains PM class",
+                    "pattern": "^\\s*PM\\.check.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/*.java"
+                    ]
+                },
+                {
+                    "reason": "Instrumentation: already contains PM class",
+                    "pattern": "^\\s*case INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                },
+                {
+                    "reason": "Profiling: do not needlessly brick smart cards",
+                    "cardOnly": true,
+                    "pattern": "SIMULATOR",
+                    "replacement": "JCOP4_P71",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                }
+            ],
+            "entryPoints": [
+                {
+                    "name": "opencrypto.jcmathlib.UnitTests",
+                    "resetIns": "0x03",
+                    "cla": "0xB0",
+                    "subtests": [
+                        {
+                            "name": "Bignat Storage",
+                            "executable": "testBnStr",
+                            "ins": "0x20",
+                            "input": "[0-9A-F]{64}"
+                        },
+                        {
+                            "name": "Bignat Addition",
+                            "executable": "testBnAdd",
+                            "ins": "0x21",
+                            "p1": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){2}"
+                        },
+                        {
+                            "name": "Bignat Subtraction",
+                            "executable": "testBnSub",
+                            "ins": "0x22",
+                            "p1": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){2}"
+                        },
+                        {
+                            "name": "Bignat Multiplication",
+                            "executable": "testBnMul",
+                            "ins": "0x23",
+                            "p1": "0x20",
+                            "input": "([0-9A-F]{64}){2}"
+                        },
+                        {
+                            "name": "Bignat Modulo",
+                            "executable": "testBnMod",
+                            "ins": "0x25",
+                            "p1": "0x21",
+                            "input": "00[0-9A-F]{64}[4-7][0-9A-F]{63}"
+                        },
+                        {
+                            "name": "Bignat School Multiplication",
+                            "executable": "testBnMulSchool",
+                            "ins": "0x27",
+                            "p1": "0x20",
+                            "input": "([0-9A-F]{64}){2}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "JCMathLib-bignat-mod",
+            "repo": "https://github.com/dufkan/JCMathLib",
+            "path": "applet/src",
+            "jckit": "305u1",
+            "remove": [
+                "applet/src/main/java/main/Run.java",
+                "applet/src/main/java/main/RunExample.java",
+                "applet/src/test/java/tests/BaseTest.java",
+                "applet/src/test/java/tests/JCMathLibTest.java"
+            ],
+            "fixup": [
+                {
+                    "reason": "Instrumentation: already contains PM class",
+                    "pattern": "^\\s*PM\\.check.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/*.java"
+                    ]
+                },
+                {
+                    "reason": "Instrumentation: already contains PM class",
+                    "pattern": "^\\s*case INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                },
+                {
+                    "reason": "Profiling: do not needlessly brick smart cards",
+                    "cardOnly": true,
+                    "pattern": "SIMULATOR",
+                    "replacement": "JCOP4_P71",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                }
+            ],
+            "entryPoints": [
+                {
+                    "name": "opencrypto.jcmathlib.UnitTests",
+                    "resetIns": "0x03",
+                    "cla": "0xB0",
+                    "subtests": [
+                        {
+                            "name": "Bignat Addition Modulo",
+                            "executable": "testBnAddMod",
+                            "ins": "0x30",
+                            "p1": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){2}"
+                        },
+                        {
+                            "name": "Bignat Subtraction",
+                            "executable": "testBnSub",
+                            "ins": "0x22",
+                            "p1": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){2}"
+                        },
+                        {
+                            "name": "Bignat Multiplication",
+                            "executable": "testBnMul",
+                            "ins": "0x23",
+                            "p1": "0x20",
+                            "input": "([0-9A-F]{64}){2}"
+                        },
+                        {
+                            "name": "Bignat Modulo",
+                            "executable": "testBnMod",
+                            "ins": "0x25",
+                            "p1": "0x21",
+                            "input": "00[0-9A-F]{64}[4-7][0-9A-F]{63}"
+                        },
+                        {
+                            "name": "Bignat School Multiplication",
+                            "executable": "testBnMulSchool",
+                            "ins": "0x27",
+                            "p1": "0x20",
+                            "input": "([0-9A-F]{64}){2}"
                         }
                     ]
                 }
