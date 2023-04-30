@@ -1833,7 +1833,6 @@
             "jckit": "222",
             "subtests": []
         },
-
         {
             "name": "OptimizedJCAlgs-Twine",
             "repo": "https://github.com/MiragePV/OptimizedJCAlgs",
@@ -1932,11 +1931,14 @@
         },
         {
             "name": "JCMathLib",
-            "repo": "https://github.com/OpenCryptoProject/JCMathLib",
-            "path": "JCMathLib/src",
-            "jckit": "222",
+            "repo": "https://github.com/dufkan/JCMathLib",
+            "path": "applet/src",
+            "jckit": "305u1",
             "remove": [
-                "JCMathLib/src/opencrypto/jcmathlib/PM.java"
+                "applet/src/main/java/main/Run.java",
+                "applet/src/main/java/main/RunExample.java",
+                "applet/src/test/java/tests/BaseTest.java",
+                "applet/src/test/java/tests/JCMathLibTest.java"
             ],
             "fixup": [
                 {
@@ -1944,7 +1946,7 @@
                     "pattern": "^\\s*PM\\.check.*$",
                     "replacement": "",
                     "files": [
-                        "JCMathLib/src/opencrypto/jcmathlib/*.java"
+                        "applet/src/main/java/opencrypto/jcmathlib/*.java"
                     ]
                 },
                 {
@@ -1952,259 +1954,69 @@
                     "pattern": "^\\s*case INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
                     "replacement": "",
                     "files": [
-                        "JCMathLib/src/opencrypto/jcmathlib/OCUnitTests.java"
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
                     ]
                 },
                 {
                     "reason": "Profiling: do not needlessly brick smart cards",
                     "cardOnly": true,
-                    "pattern": "(setCard\\(OperationSupport\\.)SIMULATOR",
-                    "replacement": "\\1J3H145",
+                    "pattern": "SIMULATOR",
+                    "replacement": "JCOP4_P71",
                     "files": [
-                        "JCMathLib/src/opencrypto/jcmathlib/ECExample.java",
-                        "JCMathLib/src/opencrypto/jcmathlib/OCUnitTests.java"
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
                     ]
                 }
             ],
             "entryPoints": [
                 {
-                    "name": "opencrypto.jcmathlib.ECExample",
-                    "subtests": [
-                        {
-                            "name": "process",
-                            "executable": "opencrypto.jcmathlib.ECExample#process",
-                            "input": "00"
-                        }
-                    ]
-
-                },
-                {
-                    "name": "opencrypto.jcmathlib.OCUnitTests",
+                    "name": "opencrypto.jcmathlib.UnitTests",
                     "resetIns": "0x03",
                     "cla": "0xB0",
                     "subtests": [
                         {
                             "name": "Integer Storage",
-                            "executable": "test_INT_STR",
+                            "executable": "testIntStr",
                             "ins": "0x09",
                             "input": "0[0-1][0-9A-F]{8}"
                         },
                         {
                             "name": "Integer Addition",
-                            "executable": "test_INT_ADD",
+                            "executable": "testIntAdd",
                             "ins": "0x10",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A-F]{8}){2}"
                         },
                         {
                             "name": "Integer Subtraction",
-                            "executable": "test_INT_SUB",
+                            "executable": "testIntSub",
                             "ins": "0x11",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A-F]{8}){2}"
                         },
                         {
                             "name": "Integer Multiplication",
-                            "executable": "test_INT_MUL",
+                            "executable": "testIntMul",
                             "ins": "0x12",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A][0-9A-F]{7}){2}"
                         },
                         {
                             "name": "Integer Division",
-                            "executable": "test_INT_DIV",
+                            "executable": "testIntDiv",
                             "ins": "0x13",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A-F]{8}){2}"
                         },
-
                         {
                             "name": "Integer Modulo",
-                            "executable": "test_INT_MOD",
+                            "executable": "testIntMod",
                             "ins": "0x15",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A-F]{8}){2}"
-                        },
-
-
-
-
-                        {
-                            "name": "Bignat Storage",
-                            "executable": "test_BN_STR",
-                            "ins": "0x20",
-                            "input": "[0-9A-F]{64}"
-                        },
-                        {
-                            "name": "Bignat Addition",
-                            "executable": "test_BN_ADD",
-                            "ins": "0x21",
-                            "p1": "0x20",
-                            "input": "([0-7][0-9A-F]{63}){2}"
-                        },
-                        {
-                            "name": "Bignat Subtraction",
-                            "executable": "test_BN_SUB",
-                            "ins": "0x22",
-                            "p1": "0x20",
-                            "input": "([0-7][0-9A-F]{63}){2}"
-                        },
-                        {
-                            "name": "Bignat Multiplication",
-                            "executable": "test_BN_MUL",
-                            "ins": "0x23",
-                            "p1": "0x20",
-                            "input": "([0-9A-F]{64}){2}"
-                        },
-                        {
-                            "name": "Bignat Exponentiation",
-                            "executable": "test_BN_EXP",
-                            "ins": "0x24",
-                            "p1": "0x08",
-                            "p2": "0x19",
-                            "input": "[0-9A-F]{16}03"
-                        },
-                        {
-                            "name": "Bignat Modulo",
-                            "executable": "test_BN_MOD",
-                            "ins": "0x25",
-                            "p1": "0x21",
-                            "input": "00[0-9A-F]{64}[4-7][0-9A-F]{63}"
-                        },
-
-                        {
-                            "name": "Bignat School Multiplication",
-                            "executable": "test_BN_MUL",
-                            "ins": "0x27",
-                            "p1": "0x20",
-                            "input": "([0-9A-F]{64}){2}"
-                        },
-
-
-
-
-                        {
-                            "name": "Bignat Addition Modulo",
-                            "executable": "test_BN_ADD_MOD",
-                            "ins": "0x30",
-                            "p1": "0x20",
-                            "p2": "0x20",
-                            "input": "([0-9A-F]{64}){2}[4-7][0-9A-F]{63}"
-                        },
-                        {
-                            "name": "Bignat Subtraction Modulo",
-                            "executable": "test_BN_SUB_MOD",
-                            "ins": "0x31",
-                            "p1": "0x20",
-                            "p2": "0x20",
-                            "input": "([0-9A-F]{64}){2}[4-7][0-9A-F]{63}"
-                        },
-                        {
-                            "name": "Bignat Multiplication Modulo",
-                            "executable": "test_BN_MUL_MOD",
-                            "ins": "0x32",
-                            "p1": "0x20",
-                            "p2": "0x20",
-                            "input": "([0-9A-F]{64}){2}[4-7][0-9A-F]{63}"
-                        },
-                        {
-                            "name": "Bignat Exponentiation Modulo",
-                            "executable": "test_BN_EXP_MOD",
-                            "ins": "0x33",
-                            "p1": "0x20",
-                            "p2": "0x01",
-                            "input": "[0-9A-F]{64}02[8-9A-F][0-9A-F]{63}"
-                        },
-                        {
-                            "name": "Bignat Inversion Modulo",
-                            "executable": "test_BN_INV_MOD",
-                            "ins": "0x34",
-                            "p1": "0x30",
-                            "input": "[0-9A-F]{96}F{8}0{7}10{24}F{24}[8-9A-F][0-9A-F]{63}"
-                        },
-                        {
-                            "name": "Bignat Squared Modulo",
-                            "executable": "test_BN_POW2_MOD",
-                            "ins": "0x35",
-                            "p1": "0x20",
-                            "p2": "0x20",
-                            "input": "[0-9A-F]{64}[8-9A-F][0-9A-F]{63}"
-                        },
-
-
-
-
-                        {
-                            "name": "EC Point Generation",
-                            "executable": "test_EC_GEN",
-                            "ins": "0x40",
-                            "input": "00"
-                        },
-                        {
-                            "name": "EC Point Double",
-                            "executable": "test_EC_DBL",
-                            "ins": "0x41",
-                            "input": "046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
-                        },
-                        {
-                            "name": "EC Point Add",
-                            "executable": "test_EC_ADD",
-                            "ins": "0x42",
-                            "inputFile": "inputs/ECPointPairs.txt"
-                        },
-                        {
-                            "name": "EC Point Scalar Multiplication",
-                            "executable": "test_EC_MUL",
-                            "ins": "0x43",
-                            "p1": "0x20",
-                            "input": "[0-9A-F]{64}046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
-                        },
-                        {
-                            "name": "EC Point Negation",
-                            "executable": "test_EC_NEG",
-                            "ins": "0x44",
-                            "p1": "0x41",
-                            "inputFile": "inputs/ECPoints.txt"
-                        },
-                        {
-                            "name": "EC Point Comparison",
-                            "executable": "test_EC_COMPARE",
-                            "ins": "0x46",
-                            "p1": "0x41",
-                            "p2": "0x41",
-                            "inputFile": "inputs/ECPointPairs.txt"
                         }
                     ]
                 }
             ]
-        },
-        {
-            "name": "Myst",
-            "repo": "https://github.com/OpenCryptoProject/Myst",
-            "path": "MPCApplet/src",
-            "jckit": "222",
-            "remove": [
-                "MPCApplet/src/mpc/PM.java"
-            ],
-            "fixup": [
-                {
-                    "reason": "Instrumentation: already contains PM class",
-                    "pattern": "^\\s*PM\\.check.*$",
-                    "replacement": "",
-                    "files": [
-                        "MPCApplet/src/mpc/*.java"
-                    ]
-                },
-                {
-                    "reason": "Instrumentation: already contains PM class",
-                    "pattern": "^\\s*case Consts\\.INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
-                    "replacement": "",
-                    "files": [
-                        "MPCApplet/src/mpc/MPCApplet.java"
-                    ]
-                }
-            ],
-            "subtests": []
         }
     ]
 }
