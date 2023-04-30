@@ -1990,7 +1990,6 @@
             "jckit": "222",
             "subtests": []
         },
-
         {
             "name": "OptimizedJCAlgs-Twine",
             "repo": "https://github.com/MiragePV/OptimizedJCAlgs",
@@ -2065,6 +2064,7 @@
             ]
         },
         {
+<<<<<<< HEAD
             "name": "AppletPlayground_PKIApplet",
             "repo": "https://github.com/martinpaljak/AppletPlayground",
             "path": "src/net/sourceforge",
@@ -2233,6 +2233,17 @@
                     "from": "Driving-License-Applet/LicenseCryto.java",
                     "to": "Driving-License-Applet/LicenseCrypto.java"
                 }
+=======
+            "name": "JCMathLib",
+            "repo": "https://github.com/dufkan/JCMathLib",
+            "path": "applet/src",
+            "jckit": "305u1",
+            "remove": [
+                "applet/src/main/java/main/Run.java",
+                "applet/src/main/java/main/RunExample.java",
+                "applet/src/test/java/tests/BaseTest.java",
+                "applet/src/test/java/tests/JCMathLibTest.java"
+>>>>>>> d79b5f6 (Setup python tests for testing repo)
             ],
             "fixup": [
                 {
@@ -2240,6 +2251,7 @@
                     "pattern": "(i\\s*\\+\\s*1)",
                     "replacement": "(short)(\\1)",
                     "files": [
+<<<<<<< HEAD
                         "Driving-License-Applet/FileSystem.java"
                     ]
                 }
@@ -2300,6 +2312,9 @@
                     "replacement": "[(short)(\\1)]",
                     "files": [
                         "src/henryhoo/Mymaze.java"
+=======
+                        "applet/src/main/java/opencrypto/jcmathlib/*.java"
+>>>>>>> d79b5f6 (Setup python tests for testing repo)
                     ]
                 },
                 {
@@ -2307,6 +2322,7 @@
                     "pattern": "([mn] [+*] [(]?[mn] - 1[)]?)",
                     "replacement": "(short)(\\1)",
                     "files": [
+<<<<<<< HEAD
                         "src/henryhoo/Mymaze.java"
                     ]
                 }
@@ -2346,6 +2362,9 @@
                     "replacement": "(short)(\\1)",
                     "files": [
                         "EOSApplet/src/eosApplet/EOSApplet.java"
+=======
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+>>>>>>> d79b5f6 (Setup python tests for testing repo)
                     ]
                 },
                 {
@@ -2448,16 +2467,20 @@
                 {
                     "reason": "Profiling: do not needlessly brick smart cards",
                     "cardOnly": true,
-                    "pattern": "(setCard\\(OperationSupport\\.)SIMULATOR",
-                    "replacement": "\\1J3H145",
+                    "pattern": "SIMULATOR",
+                    "replacement": "JCOP4_P71",
                     "files": [
+<<<<<<< HEAD
                         "applet/src/main/java/opencrypto/jcmathlib/Example.java",
+=======
+>>>>>>> d79b5f6 (Setup python tests for testing repo)
                         "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
                     ]
                 }
             ],
             "entryPoints": [
                 {
+<<<<<<< HEAD
                     "name": "opencrypto.jcmathlib.Example",
                     "subtests": [
                         {
@@ -2469,6 +2492,8 @@
 
                 },
                 {
+=======
+>>>>>>> d79b5f6 (Setup python tests for testing repo)
                     "name": "opencrypto.jcmathlib.UnitTests",
                     "resetIns": "0x03",
                     "cla": "0xB0",
@@ -2513,6 +2538,7 @@
                             "ins": "0x15",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A-F]{8}){2}"
+<<<<<<< HEAD
                         },
 
 
@@ -2693,6 +2719,8 @@
                             "ins": "0x4A",
                             "p1": "0x41",
                             "inputFile": "inputs/ECPoints.txt"
+=======
+>>>>>>> d79b5f6 (Setup python tests for testing repo)
                         }
                     ]
                 }
