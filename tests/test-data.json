@@ -8,6 +8,7 @@
     "tests": [
         {
 <<<<<<< HEAD
+<<<<<<< HEAD
             "name": "belgian-e-id",
             "repo": "https://github.com/amoerie/belgian-e-id",
             "path": "workspace/JavaCard/src",
@@ -833,6 +834,17 @@
             "jckit": "222",
             "remove": [
                 "MPCApplet/src/mpc/PM.java"
+=======
+            "name": "JCMathLib-test",
+            "repo": "https://github.com/dufkan/JCMathLib",
+            "path": "applet/src",
+            "jckit": "305u1",
+            "remove": [
+                "applet/src/main/java/main/Run.java",
+                "applet/src/main/java/main/RunExample.java",
+                "applet/src/test/java/tests/BaseTest.java",
+                "applet/src/test/java/tests/JCMathLibTest.java"
+>>>>>>> e0e00c4 (Update tests suits)
             ],
             "fixup": [
                 {
@@ -840,11 +852,16 @@
                     "pattern": "^\\s*PM\\.check.*$",
                     "replacement": "",
                     "files": [
+<<<<<<< HEAD
                         "MPCApplet/src/mpc/*.java"
+=======
+                        "applet/src/main/java/opencrypto/jcmathlib/*.java"
+>>>>>>> e0e00c4 (Update tests suits)
                     ]
                 },
                 {
                     "reason": "Instrumentation: already contains PM class",
+<<<<<<< HEAD
                     "pattern": "^\\s*case Consts\\.INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
                     "replacement": "",
                     "files": [
@@ -2237,6 +2254,43 @@
 =======
             "name": "JCMathLib",
 =======
+=======
+                    "pattern": "^\\s*case INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                },
+                {
+                    "reason": "Profiling: do not needlessly brick smart cards",
+                    "cardOnly": true,
+                    "pattern": "SIMULATOR",
+                    "replacement": "JCOP4_P71",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                }
+            ],
+            "entryPoints": [
+                {
+                    "name": "opencrypto.jcmathlib.UnitTests",
+                    "resetIns": "0x03",
+                    "cla": "0xB0",
+                    "subtests": [
+                        {
+                            "name": "EC Compare - same",
+                            "executable": "testEcCompare",
+                            "ins": "0x46",
+                            "p1": "0x41",
+                            "p2": "0x41",
+                            "inputFile": "inputs/ECPointCompare/same.txt"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+>>>>>>> e0e00c4 (Update tests suits)
             "name": "JCMathLib-int",
 >>>>>>> bf698c2 (Add tests for bignat operations)
             "repo": "https://github.com/dufkan/JCMathLib",
@@ -2509,11 +2563,88 @@
                             "input": "0[0-1][0-9A-F]{8}"
                         },
                         {
-                            "name": "Integer Addition",
+                            "name": "Integer Addition - POSITIVE + positive",
                             "executable": "testIntAdd",
                             "ins": "0x10",
                             "p1": "0x05",
-                            "input": "(0[0-1][0-9A-F]{8}){2}"
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Hpositive_Lpositive.txt"
+                        },
+                        {
+                            "name": "Integer Addition - positive + POSITIVE",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Lpositive_Hpositive.txt"
+                        },
+                        {
+                            "name": "Integer Addition - NEGATIVE + negative",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Hnegative_Lnegative.txt"
+                        },
+                        {
+                            "name": "Integer Addition - negative + NEGATIVE",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Lnegative_Hnegative.txt"
+                        },
+                        {
+                            "name": "Integer Addition - NEGATIVE + POSITIVE",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Hnegative_Hpositive.txt"
+                        },
+                        {
+                            "name": "Integer Addition - NEGATIVE + positive",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Hnegative_Lpositive.txt"
+                        },
+                        {
+                            "name": "Integer Addition - negative + positive",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Lnegative_Lpositive.txt"
+                        },
+                        {
+                            "name": "Integer Addition - negative + POSITIVE",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Lnegative_Hpositive.txt"
+                        },
+                        {
+                            "name": "Integer Addition - POSITIVE + NEGATIVE",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Hpositive_Hnegative.txt"
+                        },
+                        {
+                            "name": "Integer Addition - POSITIVE + negative",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Hpositive_Lnegative.txt"
+                        },
+                        {
+                            "name": "Integer Addition - positive + negative",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Lpositive_Lnegative.txt"
+                        },
+                        {
+                            "name": "Integer Addition - positive + NEGATIVE",
+                            "executable": "testIntAdd",
+                            "ins": "0x10",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerAdd/testIntAdd_Lpositive_Hnegative.txt"
                         },
                         {
                             "name": "Integer Subtraction",
@@ -2523,11 +2654,50 @@
                             "input": "(0[0-1][0-9A-F]{8}){2}"
                         },
                         {
+                            "name": "Integer Subtraction - negate",
+                            "executable": "opencrypto.jcmathlib.Integer#subtract",
+                            "ins": "0x11",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerSubtract/negate_negative.txt"
+                        },
+                        {
+                            "name": "Integer Subtraction - negate",
+                            "executable": "opencrypto.jcmathlib.Integer#subtract",
+                            "ins": "0x11",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerSubtract/negate_positive.txt"
+                        },
+                        {
                             "name": "Integer Multiplication",
                             "executable": "testIntMul",
                             "ins": "0x12",
                             "p1": "0x05",
+<<<<<<< HEAD
                             "input": "(00(00){4}[0-9A][0-9A-F]{3}){2}"
+=======
+                            "inputFile": "inputs/IntegerMul/random.txt"
+                        },
+                        {
+                            "name": "Integer Multiplication",
+                            "executable": "multiply",
+                            "ins": "0x12",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerMul/second_positive.txt"
+                        },
+                        {
+                            "name": "Integer Multiplication",
+                            "executable": "testIntMul",
+                            "ins": "0x12",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerMul/second_positive.txt"
+                        },
+                        {
+                            "name": "Integer Multiplication",
+                            "executable": "testIntMul",
+                            "ins": "0x12",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerMul/outliers_high.txt"
+>>>>>>> e0e00c4 (Update tests suits)
                         },
                         {
                             "name": "Integer Division",
@@ -2537,11 +2707,103 @@
                             "input": "(0[0-1][0-9A-F]{8}){2}"
                         },
                         {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x08",
+                            "inputFile": "inputs/IntegerDiv/positive_same.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x08",
+                            "inputFile": "inputs/IntegerDiv/positive_second_bigger.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x08",
+                            "inputFile": "inputs/IntegerDiv/positive_second_smaller.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "opencrypto.jcmathlib.Integer#divide",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "remainderDivide",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_second_smaller.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_second_bigger.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "opencrypto.jcmathlib.Integer#divide",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_second_smaller.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "remainderDivide",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_second_bigger.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "remainderDivide",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_second_smaller.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/positive_negative.txt"
+                        },
+                        {
+                            "name": "Integer Division",
+                            "executable": "testIntDiv",
+                            "ins": "0x13",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_positive.txt"
+                        },
+                        {
                             "name": "Integer Modulo",
                             "executable": "testIntMod",
                             "ins": "0x15",
                             "p1": "0x05",
                             "input": "(0[0-1][0-9A-F]{8}){2}"
+<<<<<<< HEAD
 <<<<<<< HEAD
                         },
 
@@ -2725,6 +2987,71 @@
                             "inputFile": "inputs/ECPoints.txt"
 =======
 >>>>>>> d79b5f6 (Setup python tests for testing repo)
+=======
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/positive.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/positive_negative.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerDiv/negative_positive.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerMod/all.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "opencrypto.jcmathlib.Integer#modulo",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerMod/all.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "remainderDivide",
+                            "ins": "0x15",
+                            "p1": "0x05",
+                            "inputFile": "inputs/IntegerMod/all.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x06",
+                            "inputFile": "inputs/IntegerMod/positive_big.txt"
+                        },
+                        {
+                            "name": "Integer Modulo",
+                            "executable": "testIntMod",
+                            "ins": "0x15",
+                            "p1": "0x06",
+                            "inputFile": "inputs/IntegerMod/positive_small.txt"
+>>>>>>> e0e00c4 (Update tests suits)
                         }
                     ]
                 }
@@ -2778,7 +3105,19 @@
                             "name": "Bignat Storage",
                             "executable": "testBnStr",
                             "ins": "0x20",
-                            "input": "[0-9A-F]{64}"
+                            "inputFile": "inputs/BignatStr/random_8.txt"
+                        },
+                        {
+                            "name": "Bignat Storage",
+                            "executable": "testBnStr",
+                            "ins": "0x20",
+                            "inputFile": "inputs/BignatStr/random_16.txt"
+                        },
+                        {
+                            "name": "Bignat Storage",
+                            "executable": "testBnStr",
+                            "ins": "0x20",
+                            "inputFile": "inputs/BignatStr/random_32.txt"
                         },
                         {
                             "name": "Bignat Addition",
@@ -2802,6 +3141,33 @@
                             "input": "([0-9A-F]{64}){2}"
                         },
                         {
+                            "name": "Bignat Mutliplication",
+                            "executable": "testBnMul",
+                            "ins": "0x23",
+                            "p1": "0x10",
+                            "inputFile": "inputs/BignatAdd/random.txt"
+                        },
+                        {
+                            "name": "Bignat Mutliplication",
+                            "executable": "testBnMul",
+                            "ins": "0x23",
+                            "p1": "0x05",
+                            "inputFile": "inputs/BignatAdd/random.txt"
+                        },
+                        {
+                            "name": "Bignat Mutliplication",
+                            "executable": "testBnMul",
+                            "ins": "0x23",
+                            "p1": "0x1B",
+                            "inputFile": "inputs/BignatAdd/random.txt"
+                        },
+                        {
+                            "name": "Bignat Square",
+                            "executable": "testBnSq",
+                            "ins": "0x26",
+                            "input": "[0-9A-F]{64}"
+                        },
+                        {
                             "name": "Bignat Modulo",
                             "executable": "testBnMod",
                             "ins": "0x25",
@@ -2814,6 +3180,55 @@
                             "ins": "0x27",
                             "p1": "0x20",
                             "input": "([0-9A-F]{64}){2}"
+                        },
+                        {
+                            "name": "Bignat Modulo",
+                            "executable": "remainderDivide",
+                            "ins": "0x25",
+                            "p1": "0x20",
+                            "inputFile": "inputs/BignatMod/32_16_lower.txt"
+                        },
+                        {
+                            "name": "Bignat Modulo",
+                            "executable": "remainderDivide",
+                            "ins": "0x25",
+                            "p1": "0x20",
+                            "inputFile": "inputs/BignatMod/32_16_higher.txt"
+                        },
+                        {
+                            "name": "Bignat Shift Right",
+                            "executable": "testBnShiftRight",
+                            "ins": "0x24",
+                            "p1": "0x01",
+                            "inputFile": "inputs/BignatStr/random_16.txt"
+                        },
+                        {
+                            "name": "Bignat Shift Right",
+                            "executable": "testBnShiftRight",
+                            "ins": "0x24",
+                            "p1": "0x10",
+                            "inputFile": "inputs/BignatStr/random_16.txt"
+                        },
+                        {
+                            "name": "Bignat Shift Right",
+                            "executable": "testBnShiftRight",
+                            "ins": "0x24",
+                            "p1": "0x20",
+                            "inputFile": "inputs/BignatStr/random_16.txt"
+                        },
+                        {
+                            "name": "Bignat Shift Right",
+                            "executable": "testBnShiftRight",
+                            "ins": "0x24",
+                            "p1": "0x40",
+                            "inputFile": "inputs/BignatStr/random_16.txt"
+                        },
+                        {
+                            "name": "Bignat Shift Right",
+                            "executable": "testBnShiftRight",
+                            "ins": "0x24",
+                            "p1": "0x80",
+                            "inputFile": "inputs/BignatStr/random_16.txt"
                         }
                     ]
                 }
@@ -2868,35 +3283,274 @@
                             "executable": "testBnAddMod",
                             "ins": "0x30",
                             "p1": "0x20",
-                            "input": "([0-7][0-9A-F]{63}){2}"
+                            "p2": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){3}"
                         },
                         {
-                            "name": "Bignat Subtraction",
-                            "executable": "testBnSub",
-                            "ins": "0x22",
+                            "name": "Bignat Addition Modulo",
+                            "executable": "modAdd",
+                            "ins": "0x30",
                             "p1": "0x20",
-                            "input": "([0-7][0-9A-F]{63}){2}"
+                            "p2": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){2}[0-9A-F]{32}"
                         },
                         {
-                            "name": "Bignat Multiplication",
-                            "executable": "testBnMul",
-                            "ins": "0x23",
+                            "name": "Bignat Addition Modulo",
+                            "executable": "modAdd",
+                            "ins": "0x30",
                             "p1": "0x20",
-                            "input": "([0-9A-F]{64}){2}"
+                            "p2": "0x20",
+                            "input": "[0-9A-F]{32}[0-9A-F]{64}[0-9A-F]{64}"
                         },
                         {
-                            "name": "Bignat Modulo",
-                            "executable": "testBnMod",
-                            "ins": "0x25",
-                            "p1": "0x21",
-                            "input": "00[0-9A-F]{64}[4-7][0-9A-F]{63}"
+                            "name": "Bignat Addition Modulo",
+                            "executable": "testBnAddMod",
+                            "ins": "0x30",
+                            "p1": "0x08",
+                            "p2": "0x08",
+                            "input": "([0-7][0-9A-F]{16}){3}"
                         },
                         {
-                            "name": "Bignat School Multiplication",
-                            "executable": "testBnMulSchool",
-                            "ins": "0x27",
+                            "name": "Bignat Subtraction Modulo",
+                            "executable": "testBnSubMod",
+                            "ins": "0x31",
                             "p1": "0x20",
-                            "input": "([0-9A-F]{64}){2}"
+                            "p2": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){3}"
+                        },
+                        {
+                            "name": "Bignat Subtraction Modulo",
+                            "executable": "testBnSubMod",
+                            "ins": "0x31",
+                            "p1": "0x08",
+                            "p2": "0x08",
+                            "inputFile": "inputs/BignatModSub/mod.txt"
+                        },
+                        {
+                            "name": "nect do not work Bignat Multiplication Modulo",
+                            "executable": "testBnSubMod",
+                            "ins": "0x32",
+                            "p1": "0x20",
+                            "p2": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){3}"
+                        },
+                        {
+                            "name": "Bignat Exponentiation Modulo",
+                            "executable": "testBnSubMod",
+                            "ins": "0x33",
+                            "p1": "0x20",
+                            "p2": "0x20",
+                            "input": "([0-7][0-9A-F]{63}){3}"
+                        },
+                        {
+                            "name": "Bignat Square Modulo",
+                            "executable": "testBnSqMod",
+                            "ins": "0x34",
+                            "p1": "0x20",
+                            "input": "[0-7][0-9A-F]{63}[0-9A-F]{20}"
+                        },
+                        {
+                            "name": "Bignat Inverse Modulo",
+                            "executable": "testBnInvMod",
+                            "ins": "0x35",
+                            "p1": "0x20",
+                            "input": "[0-7][0-9A-F]{63}[0-9A-F]{20}"
+                        },
+                        {
+                            "name": "Bignat Sqrt Modulo",
+                            "executable": "testBnModSqrt",
+                            "ins": "0x36",
+                            "p1": "0x20",
+                            "input": "[0-7][0-9A-F]{63}[0-9A-F]{20}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "JCMathLib-ecpoint",
+            "repo": "https://github.com/dufkan/JCMathLib",
+            "path": "applet/src",
+            "jckit": "305u1",
+            "remove": [
+                "applet/src/main/java/main/Run.java",
+                "applet/src/main/java/main/RunExample.java",
+                "applet/src/test/java/tests/BaseTest.java",
+                "applet/src/test/java/tests/JCMathLibTest.java"
+            ],
+            "fixup": [
+                {
+                    "reason": "Instrumentation: already contains PM class",
+                    "pattern": "^\\s*PM\\.check.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/*.java"
+                    ]
+                },
+                {
+                    "reason": "Instrumentation: already contains PM class",
+                    "pattern": "^\\s*case INS_PERF_SETSTOP:.*\n\\s*PM\\.m_perfStop.*\n.*$",
+                    "replacement": "",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                },
+                {
+                    "reason": "Profiling: do not needlessly brick smart cards",
+                    "cardOnly": true,
+                    "pattern": "SIMULATOR",
+                    "replacement": "JCOP4_P71",
+                    "files": [
+                        "applet/src/main/java/opencrypto/jcmathlib/UnitTests.java"
+                    ]
+                }
+            ],
+            "entryPoints": [
+                {
+                    "name": "opencrypto.jcmathlib.UnitTests",
+                    "resetIns": "0x03",
+                    "cla": "0xB0",
+                    "subtests": [
+                        {
+                            "name": "EC Point Generate",
+                            "executable": "randomize",
+                            "ins": "0x40",
+                            "input": "00"
+                        },
+                        {
+                            "name": "EC Point Double - multXY",
+                            "executable": "multXY",
+                            "ins": "0x41",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECpoints.txt"
+                        },
+                        {
+                            "name": "EC Point Double - multXYKA",
+                            "executable": "multXYKA",
+                            "ins": "0x41",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECpoints.txt"
+                        },
+                        {
+                            "name": "EC Point Double - testEcDbl",
+                            "executable": "testEcDbl",
+                            "ins": "0x41",
+                            "inputFile": "inputs/ECPoints_makeDouble_outliers.txt"
+                        },
+                        {
+                            "name": "EC Point Add - add",
+                            "executable": "multXYKA",
+                            "ins": "0x42",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECPointPairs.txt"
+                        },
+                        {
+                            "name": "EC Point Add - add",
+                            "executable": "add(opencrypto.jcmathlib.ECPoint)",
+                            "ins": "0x42",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECPointPairs.txt"
+                        },
+                        {
+                            "name": "EC Point Add - hwAdd",
+                            "executable": "hwAdd",
+                            "ins": "0x42",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECPointPairs.txt"
+                        },
+                        {
+                            "name": "EC Point Add - multAndAddKA",
+                            "executable": "multAndAddKA",
+                            "ins": "0x42",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECPointPairs.txt"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication - multiplication",
+                            "executable": "multiplication(opencrypto.jcmathlib.BigNat)",
+                            "ins": "0x43",
+                            "p1": "0x20",
+                            "input": "[0-9A-F]{64}046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication - multXY - small numbers",
+                            "executable": "multXY",
+                            "ins": "0x43",
+                            "p1": "0x03",
+                            "input": "12[0-9A-F]{4}046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication - multXY - big numbers",
+                            "executable": "multXY",
+                            "ins": "0x43",
+                            "p1": "0x20",
+                            "input": "[8-9A-F]{64}046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication - multXYKA - small numbers",
+                            "executable": "multXYKA",
+                            "ins": "0x43",
+                            "p1": "0x03",
+                            "input": "12[0-9A-F]{4}046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication - multXYKA - big numbers",
+                            "executable": "multXYKA",
+                            "ins": "0x43",
+                            "p1": "0x20",
+                            "input": "[8-9A-F]{64}046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C2964FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication & Addition - multAndAdd - small scalar",
+                            "executable": "multAndAdd",
+                            "ins": "0x49",
+                            "p1": "0x03",
+                            "input": "12[0-9A-F]{4}04D5B00F5FA3ECC06C60B83CD453113CFEA81BABA2B19731F3C7ABE2D2FBCC1D3B0B8D0AAA5FAB1E13A325695DCEEADDA8B87EC33B3371F257A31F3F091674891604C6F226492F7A9D3FEFAFBCE54DD19F6785273455C516F2A5BC292771D3392D249150E1CAA0C1EA10E188C4CAF6EDEEC7B6265C2F8877D1F53331910B3E2A7D9F"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication & Addition - multAndAdd - big scalar",
+                            "executable": "multAndAdd",
+                            "ins": "0x49",
+                            "p1": "0x20",
+                            "input": "[8-9A-F]{64}04D5B00F5FA3ECC06C60B83CD453113CFEA81BABA2B19731F3C7ABE2D2FBCC1D3B0B8D0AAA5FAB1E13A325695DCEEADDA8B87EC33B3371F257A31F3F091674891604C6F226492F7A9D3FEFAFBCE54DD19F6785273455C516F2A5BC292771D3392D249150E1CAA0C1EA10E188C4CAF6EDEEC7B6265C2F8877D1F53331910B3E2A7D9F"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication & Addition - multAndAddKA - small scalar",
+                            "executable": "multAndAddKA",
+                            "ins": "0x49",
+                            "p1": "0x03",
+                            "input": "12[0-9A-F]{4}04D5B00F5FA3ECC06C60B83CD453113CFEA81BABA2B19731F3C7ABE2D2FBCC1D3B0B8D0AAA5FAB1E13A325695DCEEADDA8B87EC33B3371F257A31F3F091674891604C6F226492F7A9D3FEFAFBCE54DD19F6785273455C516F2A5BC292771D3392D249150E1CAA0C1EA10E188C4CAF6EDEEC7B6265C2F8877D1F53331910B3E2A7D9F"
+                        },
+                        {
+                            "name": "EC Point Scalar Multiplication & Addition - multAndAddKA - big scalar",
+                            "executable": "multAndAddKA",
+                            "ins": "0x49",
+                            "p1": "0x20",
+                            "input": "[8-9A-F]{64}04D5B00F5FA3ECC06C60B83CD453113CFEA81BABA2B19731F3C7ABE2D2FBCC1D3B0B8D0AAA5FAB1E13A325695DCEEADDA8B87EC33B3371F257A31F3F091674891604C6F226492F7A9D3FEFAFBCE54DD19F6785273455C516F2A5BC292771D3392D249150E1CAA0C1EA10E188C4CAF6EDEEC7B6265C2F8877D1F53331910B3E2A7D9F"
+                        },
+                        {
+                            "name": "EC Point Negation",
+                            "executable": "opencrypto.jcmathlib.ECPoint#negate",
+                            "ins": "0x44",
+                            "p1": "0x41",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECpoints.txt"
+                        },
+                        {
+                            "name": "EC Point Negation - modNegate",
+                            "executable": "modNegate",
+                            "ins": "0x44",
+                            "p1": "0x41",
+                            "inputFile": "C:\\Users\\User\\FI_MUNI\\thesis\\reports\\data\\ECpoints.txt"
+                        },
+                        {
+                            "name": "EC Compare - same",
+                            "executable": "testEcCompare",
+                            "ins": "0x46",
+                            "p1": "0x41",
+                            "p2": "0x41",
+                            "inputFile": "inputs/ECPointCompare/same.txt"
+                        },
+                        {
+                            "name": "EC Compare - same",
+                            "executable": "testEcCompare",
+                            "ins": "0x46",
+                            "p1": "0x41",
+                            "p2": "0x41",
+                            "inputFile": "inputs/ECPointCompare/different.txt"
                         }
                     ]
                 }
