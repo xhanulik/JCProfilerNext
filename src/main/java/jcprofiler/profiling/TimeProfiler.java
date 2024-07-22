@@ -142,7 +142,9 @@ public class TimeProfiler extends AbstractProfiler {
                 System.out.printf("(Public group key encoded %s\n", new String(Hex.encode(point)));
 
                 // Send secret and point to the card
-                cardManager.transmit(new CommandAPDU(0, 1, args.threshold, args.parties, Util.concat(new byte[]{(byte) CARD}, secret, point)));
+                CommandAPDU setupAPDU = new CommandAPDU(0, 1, args.threshold, args.parties, Util.concat(new byte[]{(byte) CARD}, secret, point));
+                System.out.println(new String(Hex.encode(setupAPDU.getBytes())));
+                cardManager.transmit(setupAPDU);
 
                 switch (args.stage) {
                     case 1: // commit
@@ -156,6 +158,9 @@ public class TimeProfiler extends AbstractProfiler {
                 }
 
                 final CommandAPDU triggerAPDU = getInputAPDU(round);
+                CommandAPDU preTriggerAPDU = new CommandAPDU(triggerAPDU.getCLA(), 0x04, 0x40, 0x00, triggerAPDU.getData());
+                System.out.println(new String(Hex.encode(preTriggerAPDU.getBytes())));
+                cardManager.transmit(preTriggerAPDU);
                 final String input = Util.bytesToHex(triggerAPDU.getBytes());
                 log.info("Round: {}/{} APDU: {}", round, args.repeatCount, input);
                 profileSingleStep(triggerAPDU);
@@ -187,8 +192,9 @@ public class TimeProfiler extends AbstractProfiler {
             byte[] hidingNonceRandomness = args.hidingNonce;
             byte[] bindingNonceRandomness = args.bindingNonce;
             assert(hidingNonceRandomness.length == 32 && bindingNonceRandomness.length == 32);
-            ResponseAPDU response = cardManager.transmit(new CommandAPDU(0, 2, 64, 0,
-                    Util.concat(hidingNonceRandomness, bindingNonceRandomness)));
+            CommandAPDU rndSetAPDU = new CommandAPDU(0, 2, 64, 0, Util.concat(hidingNonceRandomness, bindingNonceRandomness));
+            System.out.println(new String(Hex.encode(rndSetAPDU.getBytes())));
+            ResponseAPDU response = cardManager.transmit(rndSetAPDU);
             if (response.getSW() != 0x9000) {
                 System.out.printf("Card %d commit APDU failed %s\n", CARD, Util.bytesToHex(response.getBytes()));
             }
@@ -201,8 +207,9 @@ public class TimeProfiler extends AbstractProfiler {
             assert(hidingNonceRandomness.length == 32 && bindingNonceRandomness.length == 32);
             System.out.printf("Card %d hiding randomness %s\n", CARD, new String(Hex.encode(hidingNonceRandomness)));
             System.out.printf("Card %d binding randomness %s\n", CARD, new String(Hex.encode(bindingNonceRandomness)));
-            ResponseAPDU response = cardManager.transmit(new CommandAPDU(0, 2, 64, 0,
-                    Util.concat(hidingNonceRandomness, bindingNonceRandomness)));
+            CommandAPDU rndSetAPDU = new CommandAPDU(0, 2, 64, 0, Util.concat(hidingNonceRandomness, bindingNonceRandomness));
+            System.out.println(new String(Hex.encode(rndSetAPDU.getBytes())));
+            ResponseAPDU response = cardManager.transmit(rndSetAPDU);
             if (response.getSW() != 0x9000) {
                 System.out.printf("Card %d commit APDU failed %s\n", CARD, Util.bytesToHex(response.getBytes()));
             }
@@ -237,7 +244,9 @@ public class TimeProfiler extends AbstractProfiler {
             System.out.printf("Card %d binding commitment (public) %s\n", identifier, new String(Hex.encode(binding)));
             System.out.printf("Card %d sends public commitments to %d: %s\n", identifier, CARD,
                     new String(Hex.encode(Util.concat(recodePoint(hiding), recodePoint(binding)))));
-            ResponseAPDU response = cardManager.transmit(new CommandAPDU(0, 3, identifier, 0, Util.concat(recodePoint(hiding), recodePoint(binding))));
+            CommandAPDU commitmentAPDU = new CommandAPDU(0, 3, identifier, 0, Util.concat(recodePoint(hiding), recodePoint(binding)));
+            System.out.println(new String(Hex.encode(commitmentAPDU.getBytes())));
+            ResponseAPDU response = cardManager.transmit(commitmentAPDU);
             if (response.getSW() != 0x9000) {
                 System.out.printf("Card %d commitment APDU failed %s\n", CARD, Util.bytesToHex(response.getBytes()));
             }
