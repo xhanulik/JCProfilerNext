@@ -80,6 +80,7 @@ public class Instrumenter {
                 spoon.addProcessor(new ModifyTimeEntryPointProcessor(args));
                 break;
             case custom:
+            case SPAtime:
                 spoon.addProcessor(new InsertCustomTrapProcessor(args));
                 spoon.addProcessor(new ModifyCustomEntryPointProcessor(args));
                 break;
@@ -148,6 +149,7 @@ public class Instrumenter {
         switch (args.mode) {
             case custom:
             case memory:
+            case SPAtime:
                 executable = JCProfilerUtil.getProfiledExecutable(model, args.entryPoint, args.executable);
                 break;
             case time:
@@ -235,6 +237,10 @@ public class Instrumenter {
                     case time:
                         actualFilename = args.mode + "/" + className + ".java";
                         break;
+                    case SPAtime:
+                        log.info("Using SPA PM class.");
+                        spoon.addInputResource(args.customPM.toString());
+                        continue;
                     default:
                         throw new RuntimeException("Unreachable statement reached!");
                     }

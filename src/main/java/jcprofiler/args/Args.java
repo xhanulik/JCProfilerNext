@@ -144,4 +144,13 @@ public class Args {
                description = "Time unit to be used in result visualisation (time profiling only)",
                converter = TimeUnitConverter.class)
     public TimeUnit timeUnit = TimeUnit.micro;
+
+    @Parameter(names = {"--package"},
+            description = "Name of package with measured applet")
+    public String packageName;
+
+    @Parameter(names = {"--power-traces"},
+            description = "Path to a directory with power traces",
+            converter = DirectoryPathConverter.class)
+    public Path tracesDirectory;
 }

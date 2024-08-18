@@ -16,7 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.jar.JarFile;
 
 /**
@@ -82,13 +85,24 @@ public class Main {
         }
     }
 
+    private static void addPackageName(Path oldFilePath, Path newFilePath, String packageName) throws IOException {
+        List<String> lines = Files.readAllLines(oldFilePath);
+
+        // Prepend the new line
+        String newLine = String.format("package %s;", packageName);
+        lines.add(0, newLine);
+
+        // Write all lines back to the file
+        Files.write(newFilePath, lines);
+    }
+
     /**
      * Validates command line arguments.
      *
      * @param  args                          object with parsed commandline arguments
      * @throws UnsupportedOperationException if the argument validation failed
      */
-    private static void validateArgs(final Args args) {
+    private static void validateArgs(final Args args) throws IOException {
         // this is practically a noop but probably not a deliberate one
         if (args.startFrom.ordinal() > args.stopAfter.ordinal())
             throw new UnsupportedOperationException(String.format(
@@ -104,6 +118,25 @@ public class Main {
             if (args.stopAfter == Stage.visualisation)
                 throw new UnsupportedOperationException(
                         "Visualisation of applet instrumented in custom mode is unsupported!");
+        }
+
+        // validate custom mode
+        if (args.mode == Mode.SPAtime) {
+            if (args.startFrom == Stage.instrumentation && args.packageName == null)
+                throw new UnsupportedOperationException("Package name is missing!");
+            /* Adjust PM class */
+            if (args.customPM != null)
+                throw new UnsupportedOperationException("Custom PM cannot be set!");
+            args.customPM = Paths.get("./PM.java");
+            Path origPM = Paths.get("./PMSpa.java");
+            addPackageName(origPM, args.customPM, args.packageName);
+
+            if (args.startFrom == Stage.instrumentation && args.stopAfter == Stage.visualisation) {
+                if (args.tracesDirectory == null) {
+                    throw new UnsupportedOperationException("Directory with power traces is not set!");
+                }
+                log.info("Profiling itself is not run, only processing of traces");
+            }
         }
 
         // validate --data-regex and --data-file
