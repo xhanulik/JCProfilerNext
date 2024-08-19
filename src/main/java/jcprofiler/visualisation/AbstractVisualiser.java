@@ -124,6 +124,7 @@ public abstract class AbstractVisualiser {
             case memory:
                 return new MemoryVisualiser(args, model);
             case time:
+            case SPAtime:
                 return new TimeVisualiser(args, model);
             default:
                 throw new RuntimeException("Unreachable statement reached!");
@@ -262,7 +263,7 @@ public abstract class AbstractVisualiser {
         context.put("inputDivision", inputDivision.prettyPrint());
         context.put("inputs", inputs.stream().map(s -> "'" + s + "'").collect(Collectors.toList()));
         context.put("measurements", measurements);
-        context.put("mode", args.mode);
+        context.put("mode", mode);
 
         // add mode specific stuff
         prepareVelocityContext(context);

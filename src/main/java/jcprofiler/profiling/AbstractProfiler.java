@@ -149,6 +149,8 @@ public abstract class AbstractProfiler {
                 return new MemoryProfiler(args, cardManager, model);
             case time:
                 return new TimeProfiler(args, cardManager, model);
+            case SPAtime:
+                return new PowerProfiler(args, cardManager, model);
             default:
                 throw new RuntimeException("Unreachable statement reached!");
         }
@@ -382,7 +384,8 @@ public abstract class AbstractProfiler {
         final Path csv = args.workDir.resolve("measurements.csv");
         try (final CSVPrinter printer = new CSVPrinter(new FileWriter(csv.toFile()), JCProfilerUtil.getCSVFormat())) {
             printer.printComment("mode,type#signature,ATR,elapsedTime,APDUHeader,inputType:value,inputDivision");
-            printer.printRecord(args.mode, profiledExecutableSignature, atr, elapsedTime, apduHeader, dataSource,
+            Mode mode = args.mode;
+            printer.printRecord(mode, profiledExecutableSignature, atr, elapsedTime, apduHeader, dataSource,
                     args.inputDivision);
 
             printer.printComment("input1,input2,input3,...");
