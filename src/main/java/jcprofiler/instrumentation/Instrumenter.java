@@ -79,6 +79,10 @@ public class Instrumenter {
                 spoon.addProcessor(new InsertTimeTrapProcessor(args));
                 spoon.addProcessor(new ModifyTimeEntryPointProcessor(args));
                 break;
+            case spaTime:
+                spoon.addProcessor(new InsertSpaTrapProcessor(args));
+                spoon.addProcessor(new ModifySpaEntryPointProcessor(args));
+                break;
             case custom:
                 spoon.addProcessor(new InsertCustomTrapProcessor(args));
                 spoon.addProcessor(new ModifyCustomEntryPointProcessor(args));
@@ -148,6 +152,7 @@ public class Instrumenter {
         switch (args.mode) {
             case custom:
             case memory:
+            case spaTime:
                 executable = JCProfilerUtil.getProfiledExecutable(model, args.entryPoint, args.executable);
                 break;
             case time:
@@ -233,6 +238,9 @@ public class Instrumenter {
                         actualFilename += (useNewerAPI ? "-new" : "-old") + ".java";
                         break;
                     case time:
+                        actualFilename = args.mode + "/" + className + ".java";
+                        break;
+                    case spaTime:
                         actualFilename = args.mode + "/" + className + ".java";
                         break;
                     default:

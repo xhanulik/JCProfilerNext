@@ -10,5 +10,6 @@ public enum Mode {
     custom,
     memory,
     stats,
-    time
+    time,
+    spaTime
 }
