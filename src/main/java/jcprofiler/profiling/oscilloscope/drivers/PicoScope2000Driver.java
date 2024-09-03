@@ -119,7 +119,7 @@ public class PicoScope2000Driver extends AbstractOscilloscope {
     }
 
     @Override
-    public void store() throws IOException {
+    public void store(Path resultFile) throws IOException {
         short ready = 0;
         while (ready == 0) {
             ready = PicoScope2000Library.INSTANCE.ps2000_ready(handle);
@@ -153,7 +153,7 @@ public class PicoScope2000Driver extends AbstractOscilloscope {
                 float[] chADataMiliVolts = adc2mV(chAData);
 
                 System.out.println("Time\t Milivolts");
-                CSVPrinter printer = new CSVPrinter(new FileWriter(super.csv.toFile()), super.format);
+                CSVPrinter printer = new CSVPrinter(new FileWriter(resultFile.toFile()), super.format);
                 for(int i = 0; i < numberOfSamplesCollected; i++) {
                     System.out.println(times[i] + ",\t" + chADataMiliVolts[i]);
                     printer.print(times[i]);

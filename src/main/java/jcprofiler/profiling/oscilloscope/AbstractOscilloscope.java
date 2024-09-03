@@ -56,6 +56,6 @@ public abstract class AbstractOscilloscope {
     public abstract void setup();
     public abstract void startMeasuring();
     public abstract void stopDevice();
-    public abstract void store() throws IOException;
+    public abstract void store(Path file) throws IOException;
     public abstract void finish();
 }
