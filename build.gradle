@@ -58,6 +58,10 @@ dependencies {
     // velocity
     implementation 'org.apache.velocity:velocity-engine-core:2.3'
 
+    // trace similarity search
+    implementation 'uk.me.berndporr:iirj:1.1'
+    implementation 'com.opencsv:opencsv:5.9'
+
     // unit tests
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
