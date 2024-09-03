@@ -5,6 +5,8 @@ package jcprofiler.args;
 
 import com.beust.jcommander.Parameter;
 
+import com.beust.jcommander.converters.BooleanConverter;
+import com.beust.jcommander.converters.IntegerConverter;
 import jcprofiler.args.converters.*;
 import jcprofiler.args.validators.*;
 import jcprofiler.util.enums.*;
@@ -141,7 +143,7 @@ public class Args {
     public InputDivision inputDivision = InputDivision.none;
 
     @Parameter(names = {"--time-unit"},
-               description = "Time unit to be used in result visualisation (time profiling only)",
+               description = "Time unit to be used in result visualisation (time and spaTime profiling only)",
                converter = TimeUnitConverter.class)
     public TimeUnit timeUnit = TimeUnit.micro;
 
@@ -149,4 +151,24 @@ public class Args {
             description = "Path to a file specifying inputs for multi-APDU run in hex format",
             converter = FilePathConverter.class)
     public Path multiApduFile;
+
+    @Parameter(names = {"--trace-dir"},
+            description = "Path to the directory where the SPA traces are saved",
+            converter = DirectoryPathConverter.class)
+    public Path traceDir;
+
+    @Parameter(names = {"--delimiter"},
+            description = "Path to the CSV delimiter file",
+            converter = FilePathConverter.class)
+    public Path delimiterFile;
+
+    @Parameter(names = {"--save-subtraces"},
+            description = "Whether to save extracted subtraces or not",
+            converter = BooleanConverter.class)
+    public boolean saveSubtraces = false;
+
+    @Parameter(names = {"--delimiter-num"},
+            description = "Number of patterns needed to construct the delimiter for SPA trace extraction",
+            converter = IntegerConverter.class)
+    public int delimiterPatternNum = 3;
 }
