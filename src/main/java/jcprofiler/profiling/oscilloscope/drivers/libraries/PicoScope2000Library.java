@@ -7,6 +7,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
 
 public interface PicoScope2000Library extends Library {
+    public final static int PS2000_MAX_VALUE = 32767;
 
     PicoScope2000Library INSTANCE = (PicoScope2000Library) Native.load(
             "ps2000", PicoScope2000Library.class
@@ -17,44 +18,22 @@ public interface PicoScope2000Library extends Library {
 
     short ps2000_close_unit(short handle);
 
-    short ps2000_get_unit_info(short handle, byte[] string, short stringLength, short info);
-
-    short ps2000_open_unit_async();
-
-    short ps2000_open_unit_progress(ShortByReference handle, ShortByReference progressPercent);
-
     short ps2000_set_channel(short handle, short channel, short enabled, short dc, short range);
 
     short ps2000_get_timebase(short handle, short timebase, int no_of_samples, IntByReference time_interval, ShortByReference time_units, short oversample, IntByReference max_samples);
 
     short ps2000_set_trigger(short handle, short source, short threshold, short direction, short delay, short auto_trigger_ms);
 
-    short ps2000_set_trigger2(short handle, short source, short threshold, short direction, float delay, short auto_trigger_ms);
-
     short ps2000_run_block(short handle, int no_of_values, short timebase, short oversample, IntByReference time_indisposed_ms);
+
+    int ps2000_get_times_and_values(short handle, Memory times, Memory buffer_a, Memory buffer_b, Memory buffer_c, Memory buffer_d, ShortByReference overflow, short time_units, int no_of_values);
+
 
     short ps2000_ready(short handle);
 
     short ps2000_stop(short handle);
 
-    int ps2000_get_values(short handle, Memory buffer_a, Memory buffer_b, Memory buffer_c, Memory buffer_d, ShortByReference overflow, int no_of_values);
-
-    int ps2000_get_times_and_values(short handle, Memory times, Memory buffer_a, Memory buffer_b, Memory buffer_c, Memory buffer_d, ShortByReference overflow, short time_units, int no_of_values);
-
-    short ps2000_set_sig_gen_built_in(short handle, int offsetVoltage, int pkToPk, int waveType, float startFrequency, float stopFrequency, float increment, float dwellTime, int sweepType, int sweeps);
-
-    // End of Method definitions
-
-
-    // Constants
-    // =========
-
-    public final static int PS2000_MAX_VALUE = 32767;
-    public final static int PS2000_MIN_VALUE = -32767;
-    public final static int PS2000_LOST_DATA = -32768;
-
     // Enumerations
-    // ============
 
     public enum PicoScope2000Channel {
         PS2000_CHANNEL_A(0),
@@ -70,11 +49,9 @@ public interface PicoScope2000Library extends Library {
         PicoScope2000Channel(int channel) {
             this.channel = channel;
         }
-
-
     }
 
-    public enum PicoScope2000Range {
+    enum PicoScope2000Range {
         PS2000_10MV,
         PS2000_20MV,
         PS2000_50MV,
@@ -90,7 +67,7 @@ public interface PicoScope2000Library extends Library {
         PS2000_MAX_RANGES;
     }
 
-    public enum PicoScope2000TimeUnits {
+    enum PicoScope2000TimeUnits {
         PS2000_FS,
         PS2000_PS,
         PS2000_NS,
@@ -100,7 +77,7 @@ public interface PicoScope2000Library extends Library {
         PS2000_MAX_TIME_UNITS;
     }
 
-    public enum PicoScope2000Error {
+    enum PicoScope2000Error {
         PS2000_OK,
         PS2000_MAX_UNITS_OPENED,  // More than PS2000_MAX_UNITS
         PS2000_MEM_FAIL,          // Not enough RAM on host machine
@@ -112,7 +89,7 @@ public interface PicoScope2000Library extends Library {
         PS2000_PICOPP_TOO_OLD;
     }
 
-    public enum PicoScope2000TriggerDirection {
+    enum PicoScope2000TriggerDirection {
         PS2000_RISING,
         PS2000_FALLING,
         PS2000_MAX_DIRS;

@@ -25,11 +25,12 @@ public class PicoScope2000Driver extends AbstractOscilloscope {
     private short chARange = (short) PicoScope2000Library.PicoScope2000Range.PS2000_10V.ordinal();
     private short chBRange = (short) PicoScope2000Library.PicoScope2000Range.PS2000_1V.ordinal();
     private double mvThreshold = 1000.0;
-    float delay = 0; // no data before trigger
+    short delay = 0; // no data before trigger
     short autoTriggerMs = 0; // wait indefinitely
     short direction = (short) PicoScope2000Library.PicoScope2000TriggerDirection.PS2000_RISING.ordinal();
-    static short timebase = 8; // 25 MS/s with PicoScope 2204A
+    static short timebase = 0;
     static int numberOfSamples = 9748538;
+    int timeIntervalNanoseconds = 51;
     static short oversample = 1;
     ShortByReference timeUnitsSbr = new ShortByReference((short) 0);
 
@@ -39,7 +40,7 @@ public class PicoScope2000Driver extends AbstractOscilloscope {
     }
 
     @Override
-    public boolean testConnection() {
+    public boolean connect() {
         handle = PicoScope2000Library.INSTANCE.ps2000_open_unit();
         return handle != 0;
     }
@@ -52,26 +53,29 @@ public class PicoScope2000Driver extends AbstractOscilloscope {
                 range); /* set range */
         if (status != PicoScope2000Library.PicoScope2000Error.PS2000_OK.ordinal()) {
             finish();
-            throw new RuntimeException("Cannot setup PicoScope2000 channel A");
+            throw new RuntimeException("Cannot setup PicoScope2000 channel");
         }
     }
 
     private void calculateTimebase() {
-        // Preselect the timebase
-        timebase = 0;
-        IntByReference timeIntervalIbr = new IntByReference(0);
-        IntByReference maxSamplesIbr = new IntByReference(0);
-        do {
-            status = PicoScope2000Library.INSTANCE.ps2000_get_timebase(handle, timebase, numberOfSamples, timeIntervalIbr, timeUnitsSbr, oversample, maxSamplesIbr);
-            // If invalid timebase is used, increment timebase index
-            if(status == 0) {
-                timebase++;
-            }
-        } while (status == 0);
-        System.out.println("\tTimebase: " + timebase);
-        System.out.println("\tTime interval: " + timeIntervalIbr);
-        System.out.println("\tTime unit: " + timeUnitsSbr);
-        System.out.println("\tMax samples: " + maxSamplesIbr);
+        short currentTimebase = 0;
+        int oldTimeInterval = 0;
+
+        IntByReference timeInterval = new IntByReference();
+        IntByReference maxSamples = new IntByReference();
+        while (PicoScope2000Library.INSTANCE.ps2000_get_timebase(
+                handle,
+                timebase,
+                numberOfSamples,
+                timeInterval,
+                timeUnitsSbr,
+                oversample,
+                maxSamples) == 0 || timeInterval.getValue() < timeIntervalNanoseconds) {
+            currentTimebase++;
+            oldTimeInterval = timeInterval.getValue();
+        }
+        timebase = (short) (currentTimebase - 1);
+        timeIntervalNanoseconds = oldTimeInterval;
     }
 
     @Override
@@ -83,7 +87,7 @@ public class PicoScope2000Driver extends AbstractOscilloscope {
         setChannel(channelB, chBRange);
         // Set trigger
         short threshold = (short) (mvThreshold / PicoScopeVoltageDefinitions.SCOPE_INPUT_RANGES_MV[chARange] * PicoScope2000Library.PS2000_MAX_VALUE);
-        status = PicoScope2000Library.INSTANCE.ps2000_set_trigger2(handle, channelA, threshold, direction, delay, autoTriggerMs);
+        status = PicoScope2000Library.INSTANCE.ps2000_set_trigger(handle, channelA, threshold, direction, delay, autoTriggerMs);
         if (status == 0) {
             finish();
             throw new RuntimeException("Cannot setup PicoScope2000 channel A");

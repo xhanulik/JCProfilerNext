@@ -3,6 +3,7 @@ package jcprofiler.profiling.oscilloscope;
 
 import jcprofiler.args.Args;
 import jcprofiler.profiling.oscilloscope.drivers.PicoScope2000Driver;
+import jcprofiler.profiling.oscilloscope.drivers.PicoScope6000Driver;
 import org.apache.commons.csv.CSVFormat;
 
 import java.io.IOException;
@@ -17,7 +18,8 @@ public abstract class AbstractOscilloscope {
      * Array of implemented oscilloscope drivers
      */
     static Class<?>[] oscilloscopeDrivers = {
-            PicoScope2000Driver.class
+            PicoScope2000Driver.class,
+            PicoScope6000Driver.class
     };
     /**
      * Commandline arguments
@@ -42,7 +44,7 @@ public abstract class AbstractOscilloscope {
             try {
                 Constructor<?> constructor = driver.getConstructor(Args.class);
                 AbstractOscilloscope device = (AbstractOscilloscope) constructor.newInstance(args);
-                if (device.testConnection()) {
+                if (device.connect()) {
                     return device;
                 }
             } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -52,7 +54,7 @@ public abstract class AbstractOscilloscope {
         throw new RuntimeException("No oscilloscope connected!");
     }
 
-    public abstract boolean testConnection();
+    public abstract boolean connect();
     public abstract void setup();
     public abstract void startMeasuring();
     public abstract void stopDevice();
