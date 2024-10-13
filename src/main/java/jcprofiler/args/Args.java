@@ -144,4 +144,9 @@ public class Args {
                description = "Time unit to be used in result visualisation (time profiling only)",
                converter = TimeUnitConverter.class)
     public TimeUnit timeUnit = TimeUnit.micro;
+
+    @Parameter(names = {"--apdu-file"},
+            description = "Path to a file specifying inputs for multi-APDU run in hex format",
+            converter = FilePathConverter.class)
+    public Path multiApduFile;
 }

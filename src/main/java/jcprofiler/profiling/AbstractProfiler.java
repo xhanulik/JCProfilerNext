@@ -93,6 +93,11 @@ public abstract class AbstractProfiler {
      */
     protected final List<String> inputs = new ArrayList<>();
 
+    /**
+     * List of APDu sent before measured inputs
+     */
+    protected final List<String> auxInputs = new ArrayList<>();
+
     private String elapsedTime;
 
     private static final Logger log = LoggerFactory.getLogger(AbstractProfiler.class);
@@ -314,6 +319,41 @@ public abstract class AbstractProfiler {
         ResponseAPDU response = cardManager.transmit(reset);
         if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
             throw new RuntimeException("Resetting the applet failed with SW " + Integer.toHexString(response.getSW()));
+    }
+
+    protected void generateAuxiliaryInputs() {
+        if (args.multiApduFile == null)
+            throw new RuntimeException("No file with auxiliary APDU specified");
+        log.info("Choosing auxiliary inputs from text file {}.", args.multiApduFile);
+        try {
+            final List<String> lines = Files.readAllLines(args.multiApduFile);
+            for (int i = 1; i <= lines.size(); i++) {
+                final String line = lines.get(i - 1);
+                if (!JCProfilerUtil.isHexString(line))
+                    throw new RuntimeException(String.format(
+                            "Input %s on line %d in file %s is not a valid hexstring!", line, i, args.multiApduFile));
+                auxInputs.add(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void sendAuxiliaryInputs(int round) throws CardException {
+
+        if (auxInputs.isEmpty())
+            throw new RuntimeException("File with auxiliary APDU empty");
+        log.info("Round {}/{}, Auxiliary APDU:", round, args.repeatCount);
+        for (String input : auxInputs) {
+            final byte[] arr = Util.hexStringToByteArray(input);
+            log.info("APDU: {}", input);
+            CommandAPDU apdu = new CommandAPDU(args.cla, args.ins, args.p1, args.p2, arr);
+            ResponseAPDU response = cardManager.transmit(apdu);
+            log.info("RESP: sw1={} sw={}", response.getSW1(), response.getSW2());
+            if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
+                throw new RuntimeException("Send auxiliary APDU failed with SW " + Integer.toHexString(response.getSW()));
+
+        }
     }
 
     /**
