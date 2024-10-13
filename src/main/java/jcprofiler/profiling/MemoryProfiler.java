@@ -171,6 +171,8 @@ public class MemoryProfiler extends AbstractProfiler {
             resetApplet();
             generateInputs(/* size */ 1);
 
+            // TODO: Add support for multi-APDU
+
             // get the input
             final CommandAPDU triggerAPDU = getInputAPDU(/* round */ 1);
             final String input = Util.bytesToHex(triggerAPDU.getBytes());
