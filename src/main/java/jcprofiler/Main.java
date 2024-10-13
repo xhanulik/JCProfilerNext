@@ -155,5 +155,11 @@ public class Main {
             throw new UnsupportedOperationException(String.format(
                     "Applet instruction byte has the same value as profiler's custom internal instruction: %d%n" +
                     "This is temporarily unsupported!", Short.toUnsignedInt(JCProfilerUtil.INS_PERF_HANDLER)));
+
+        // notify user that multi-APDU mode is on
+        if (args.multiApduFile != null) {
+            log.info(String.format("Multi-APDU mode is on: the APDUs from file %s will be executed before running the trigger APDU!",
+                    args.multiApduFile));
+        }
     }
 }
