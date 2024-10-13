@@ -155,7 +155,7 @@ public abstract class AbstractProfiler {
             case time:
                 return new TimeProfiler(args, cardManager, model);
             case spaTime:
-                return new SpaTimeProfiler(args, cardManager, model);
+                return new SpaTimeProfiler(args, model);
             default:
                 throw new RuntimeException("Unreachable statement reached!");
         }

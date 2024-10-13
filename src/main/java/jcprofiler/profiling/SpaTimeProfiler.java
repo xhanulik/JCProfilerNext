@@ -4,9 +4,11 @@
 
 package jcprofiler.profiling;
 
-import cz.muni.fi.crocs.rcard.client.CardManager;
 import cz.muni.fi.crocs.rcard.client.Util;
 import jcprofiler.args.Args;
+import jcprofiler.card.driver.ATR;
+import jcprofiler.card.driver.ConfigureSmartcardCommand;
+import jcprofiler.card.driver.TargetController;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.similaritysearch.SimilaritySearchController;
 import jcprofiler.profiling.similaritysearch.dataprocessing.DataManager;
@@ -46,15 +48,16 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
     AbstractOscilloscope oscilloscope;
 
+    TargetController target;
+
     /**
      * Constructs the {@link SpaTimeProfiler} class.
      *
      * @param args        object with commandline arguments
-     * @param cardManager applet connection instance
      * @param model       Spoon model
      */
-    public SpaTimeProfiler(final Args args, final CardManager cardManager, final CtModel model) {
-        super(args, cardManager, JCProfilerUtil.getProfiledMethod(model, args.executable), null);
+    public SpaTimeProfiler(final Args args, final CtModel model) {
+        super(args, null, JCProfilerUtil.getProfiledMethod(model, args.executable), null);
     }
 
     /**
@@ -65,35 +68,47 @@ public class SpaTimeProfiler extends AbstractProfiler {
     @Override
     protected void profileImpl() {
         try {
-            // reset if possible and erase any previous performance stop
-            resetApplet();
-
-            // generate profiling inputs
-            generateInputs(args.repeatCount);
+            // prepare target LEIA controller
+            target = new TargetController();
+            target.open();
+            if (!target.isCardInserted())
+                throw new RuntimeException("No card inserted into LEIA board!");
+            target.configureSmartcard(ConfigureSmartcardCommand.T.T1, 0, 0, true, true);
+            ATR atr = target.getATR();
+            System.out.printf("We are using protocol T=%d and the frequency of the ISO7816 clock is %d kHz !\n", atr.tProtocolCurr, atr.fMaxCurr / 1000);
+            target.resetTriggerStrategy();
 
             // find and prepare oscilloscope
             oscilloscope = AbstractOscilloscope.create();
+            // TODO: Add support for variating arguments
             oscilloscope.setup();
-
             if (args.saveSubtraces) {
                 // create director for subtraces
                 subtracesDirectory = args.traceDir.resolve("subtracesDirectory");
             }
 
+            // TODO: resetApplet() before first run;
+
+            // generate profiling inputs
+            generateInputs(args.repeatCount);
+
            // load delimiter trace
             delimiterTrace = DataManager.loadTrace(args.delimiterFile.toAbsolutePath().toString(), true);
 
             for (int round = 1; round <= args.repeatCount; round++) {
+                // get APDU which will be measured
                 final CommandAPDU triggerAPDU = getInputAPDU(round);
-
                 final String input = Util.bytesToHex(triggerAPDU.getBytes());
                 log.info("Round: {}/{} APDU: {}", round, args.repeatCount, input);
 
                 // create file for storing the final trace
                 Path traceFilePath = args.traceDir.resolve(traceFile + "_" + round + ".csv");
-                // run operation and oscilloscope
+
+                // run operation and oscilloscope measuring
                 profileSingleStep(triggerAPDU, traceFilePath);
-                // parse trace for times
+
+                // trace is stored for now in CSVparse trace for times
+                // TODO: add support for extraction directly from double[] arrays returned from picoscope
                 if (extractTimes(traceFilePath, round) != 0) {
                     successfulExtractions += 1;
                     // extraction failed, all measurements for given trigger APDU is null
@@ -102,9 +117,14 @@ public class SpaTimeProfiler extends AbstractProfiler {
                     }
                 }
             }
+            // close connection to oscilloscope
             oscilloscope.finish();
 
         } catch (CardException | InterruptedException | IOException e) {
+            if (oscilloscope != null)
+                oscilloscope.finish();
+            if (target != null)
+                target.close();
             throw new RuntimeException(e);
         }
 
@@ -120,14 +140,23 @@ public class SpaTimeProfiler extends AbstractProfiler {
      * @throws RuntimeException if setting the next fatal performance trap failed
      */
     private void profileSingleStep(CommandAPDU triggerAPDU, Path tracePath) throws CardException {
+        // reset triggers
+        target.resetTriggerStrategy();
+
+        // send APDU before the measured APDU
+        // TODO: add multiplce APDU support
+
+
+        // start measuring on oscilloscope
         oscilloscope.startMeasuring();
 
         // send profiled APDu to card
-        final ResponseAPDU response = cardManager.transmit(triggerAPDU);
+        ResponseAPDU response = target.sendAPDU(triggerAPDU);
 
-        // stored measured data
+        // stored measured data into CSV
+        // TODO: possibility for getting the direct values into doubl[] array
         try {
-            oscilloscope.store(tracePath);
+            oscilloscope.store(tracePath, 5000); // TODO: variable cut-off frequency
         } catch (Exception e) {
             throw new RuntimeException("Storage of profiled data unsuccessfull!");
         }
@@ -138,7 +167,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
             throw new RuntimeException("Unexpected SW received when profiling: %s");
         }
         log.debug("Collecting measurement complete.");
-        resetApplet();
+        // TODO: Add resetApplet() equivalent
     }
 
     private short getTrapID(int index) {

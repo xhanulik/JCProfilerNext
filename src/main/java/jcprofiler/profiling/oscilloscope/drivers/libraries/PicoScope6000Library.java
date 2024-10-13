@@ -2,17 +2,21 @@ package jcprofiler.profiling.oscilloscope.drivers.libraries;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
 
 public interface PicoScope6000Library extends Library {
-    PicoScope6000Library INSTANCE = (PicoScope6000Library) Native.load(
+    PicoScope6000Library INSTANCE = Native.load(
             "ps6000", PicoScope6000Library.class
     );
+    int PS6000_OK = 0x00000000;
 
-    int PS6000_MAX_VALUE = 32512;
+    int PS6000_BW_25MHZ = 2;
 
     int ps6000OpenUnit(ShortByReference handle, String serial);
+
+    int ps6000GetUnitInfo(short handle, byte[] string, short stringLength, ShortByReference requiredSize, int info);
 
     int ps6000SetChannel(short handle, short channel, short enabled, short type, short range, float analogueOffset, short bandwidth);
 
@@ -20,11 +24,11 @@ public interface PicoScope6000Library extends Library {
 
     int ps6000SetSimpleTrigger(short handle, short enable, short source, short threshold, short direction, int delay, short autoTrigger_ms);
 
-    int ps6000RunBlock(short handle, int noOfPreTriggerSamples, int noOfPostTriggerSamples, int timebase, short oversample, IntByReference timeIndisposedMs, int segmentIndex, short lpReady, Void pParameter);
+    int ps6000RunBlock(short handle, int noOfPreTriggerSamples, int noOfPostTriggerSamples, int timebase, short oversample, IntByReference timeIndisposedMs, int segmentIndex, Pointer lpReady, Pointer pParameter);
 
     int ps6000IsReady(short handle, ShortByReference ready);
 
-    int ps6000SetDataBuffers(short handle, short channel, ShortByReference bufferMax, ShortByReference bufferMin, int bufferLth, short downSampleRatioMode);
+    int ps6000SetDataBuffer(short handle, short channel, Pointer buffer, int bufferLth, short downSampleRatioMode);
 
     int ps6000GetValues(short handle, int startIndex, IntByReference noOfSamples, int downSampleRatio, short downSampleRatioMode, int segmentIndex, ShortByReference overflow);
 
@@ -57,18 +61,6 @@ public interface PicoScope6000Library extends Library {
         PS6000_50V,
         PS6000_MAX_RANGES
     }
-
-    enum PicoScope6000TimeUnits {
-        PS6000_FS,
-        PS6000_PS,
-        PS6000_NS,
-        PS6000_US,
-        PS6000_MS,
-        PS6000_S,
-        PS6000_MAX_TIME_UNITS,
-    }
-
-    final int PS6000_OK = 0x00000000;
 
     enum PicoScope6000ThresholdDirection {
         PS6000_ABOVE,             //using upper threshold
