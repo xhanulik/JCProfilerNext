@@ -346,13 +346,12 @@ public abstract class AbstractProfiler {
         log.info("Round {}/{}, Auxiliary APDU:", round, args.repeatCount);
         for (String input : auxInputs) {
             final byte[] arr = Util.hexStringToByteArray(input);
+            CommandAPDU apdu = new CommandAPDU(arr);
             log.info("APDU: {}", input);
-            CommandAPDU apdu = new CommandAPDU(args.cla, args.ins, args.p1, args.p2, arr);
             ResponseAPDU response = cardManager.transmit(apdu);
-            log.info("RESP: sw1={} sw={}", response.getSW1(), response.getSW2());
+            log.info("RESP: SW={}", String.format("%02X", response.getSW1()) + String.format("%02X", response.getSW2()));
             if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
-                throw new RuntimeException("Send auxiliary APDU failed with SW " + Integer.toHexString(response.getSW()));
-
+                throw new RuntimeException("Unexpected error SW received!");
         }
     }
 
