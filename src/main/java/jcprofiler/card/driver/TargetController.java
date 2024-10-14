@@ -33,7 +33,7 @@ public class TargetController {
     /**
      * Try to detect connected LEIA board and open serial port for communication.
      */
-    public void open() {
+    public boolean open() {
         printDebug("> Opening ports\n");
 
         SerialPort[] availablePorts = SerialPort.getCommPorts();
@@ -48,7 +48,7 @@ public class TargetController {
         }
 
         if (count > 2 || count == 0) {
-            throw new RuntimeException("No LEIA device connected");
+            return false;
         }
 
         // Test connection to the ports and try to open the final one
@@ -78,6 +78,7 @@ public class TargetController {
         readAvailableBytes();
         testWaitingFlag();
         printDebug("< Ports opening OK\n");
+        return true;
     }
 
     /**
@@ -373,7 +374,7 @@ public class TargetController {
         RESP response = new RESP(); //  for unpacking the answer data
         ResponseAPDU responseApdu; // for return
         synchronized (lock) {
-            System.out.println("APDU: " + apdu);
+            printDebug("APDU: " + apdu);
             sendCommand("a".getBytes(), apdu);
             int resSize = this.readResponseSize();
             if (resSize < 14)
@@ -384,7 +385,7 @@ public class TargetController {
 
             // copy into ResponseAPDU
             responseApdu = new ResponseAPDU(response.toArray());
-            System.out.println("RES: " + response);
+            printDebug("RES: " + response);
         }
         printDebug("< Send APDU OK\n");
         return responseApdu;

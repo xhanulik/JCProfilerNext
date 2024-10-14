@@ -5,8 +5,8 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
-import oscilloscope.AbstractOscilloscope;
-import oscilloscope.drivers.libraries.PicoScope4000Library;
+import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
+import jcprofiler.profiling.oscilloscope.drivers.libraries.PicoScope4000Library;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -110,7 +110,7 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
             } catch (Exception e) {
                 throw new RuntimeException("ps4000GetTimebase failed with exception: " + e.getMessage());
             }
-            if (status == PicoScope4000Library.PS4000_OK && currentTimeInterval.getValue() >= wantedTimeInterval) {
+            if (status == PicoScope4000Library.PS4000_OK && currentTimeInterval.getValue() > wantedTimeInterval) {
                 break;
             }
             timeInterval = currentTimeInterval.getValue();
@@ -121,8 +121,8 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
             throw new RuntimeException("No timebase fitting arguments found");
         }
         timebase = currentTimebase - 1;
-        System.out.printf("Device %s setup - Timebase: %d, time interval: %d, samples: %d, max samples: %d\n",
-                deviceName, currentTimebase, currentTimeInterval.getValue(), numberOfSamples, currentMaxSamples.getValue());
+        System.out.printf("Device %s setup - Timebase: %d, time interval: %d, samples: %d\n",
+                deviceName, currentTimebase, timeInterval, numberOfSamples);
     }
 
     @Override

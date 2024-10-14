@@ -6,6 +6,10 @@ package jcprofiler.installation;
 import apdu4j.BIBO;
 import apdu4j.CardBIBO;
 import apdu4j.TerminalManager;
+import jcprofiler.card.driver.ATR;
+import jcprofiler.card.driver.ConfigureSmartcardCommand;
+import jcprofiler.card.driver.TargetController;
+import jcprofiler.util.enums.Mode;
 import pro.javacard.gp.GPTool;
 
 import cz.muni.fi.crocs.rcard.client.CardManager;
@@ -118,6 +122,10 @@ public class Installer {
     public static CardManager connect(final Args args, final CtClass<?> entryPoint) {
         return args.useSimulator ? configureSimulator(args, entryPoint)
                                  : connectToCard(/* select */ true);
+    }
+
+    public static TargetController connect(final Args args) {
+        return connectToCard();
     }
 
     /**
@@ -245,6 +253,41 @@ public class Installer {
         } catch (CardException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static TargetController connectToCard() {
+        log.info("Connecting to a LEIA board.");
+        final TargetController targetController = new TargetController();
+
+        log.info("Looking for LEIA board with a card.");
+        while (!targetController.open()) {
+            log.warn("No connected LEIA board found!");
+            log.info("Waiting for a LEIA board.");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {}
+        }
+
+        while (!targetController.isCardInserted()) {
+            log.warn("No connected card to LEIA board found!");
+            log.info("Waiting for a card connected to LEIA board.");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {}
+        }
+        log.info("Successfully connected.");
+        log.info("Configuring a card in LEIA board.");
+        targetController.configureSmartcard(ConfigureSmartcardCommand.T.T1, 0, 0, true, true);
+        ATR atr = targetController.getATR();
+        log.info("Using protocol T={} and the frequency of the ISO7816 clock {} kHz.", atr.tProtocolCurr, atr.fMaxCurr / 1000);
+
+        // select AID
+        log.info("Selecting profiled applet on card.");
+        CommandAPDU cmd = new CommandAPDU(0x00, 0xa4, 0x04, 0x00, APPLET_AID);
+        ResponseAPDU response = targetController.sendAPDU(cmd);
+        if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
+            throw new RuntimeException("Applet could not se selected. SW: " + Integer.toHexString(response.getSW()));
+        return targetController;
     }
 
     /**

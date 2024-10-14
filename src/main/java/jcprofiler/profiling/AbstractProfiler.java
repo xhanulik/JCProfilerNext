@@ -10,6 +10,7 @@ import cz.muni.fi.crocs.rcard.client.CardManager;
 import cz.muni.fi.crocs.rcard.client.Util;
 
 import jcprofiler.args.Args;
+import jcprofiler.card.driver.TargetController;
 import jcprofiler.util.enums.InputDivision;
 import jcprofiler.util.JCProfilerUtil;
 import jcprofiler.util.enums.Mode;
@@ -56,6 +57,7 @@ public abstract class AbstractProfiler {
      * A card connection instance
      */
     protected final CardManager cardManager;
+    protected final TargetController targetController;
     /**
      * Profiled executable
      */
@@ -113,7 +115,7 @@ public abstract class AbstractProfiler {
      *
      * @throws RuntimeException if the sources were instrumented fo ra different profiling mode
      */
-    protected AbstractProfiler(final Args args, final CardManager cardManager, final CtExecutable<?> executable,
+    protected AbstractProfiler(final Args args, final CardManager cardManager, final TargetController targetController, final CtExecutable<?> executable,
                                final String customInsField) {
         final CtModel model = executable.getFactory().getModel();
         PM = JCProfilerUtil.getToplevelType(model, "PM");
@@ -121,6 +123,7 @@ public abstract class AbstractProfiler {
 
         this.args = args;
         this.cardManager = cardManager;
+        this.targetController = targetController;
 
         // check for profiling mode mismatch
         if (!JCProfilerUtil.entryPointHasField(model, args.entryPoint, customInsField))
@@ -146,7 +149,7 @@ public abstract class AbstractProfiler {
      * @param  model       a Spoon model
      * @return             constructed {@link AbstractProfiler} object
      */
-    public static AbstractProfiler create(final Args args, final CardManager cardManager, final CtModel model) {
+    public static AbstractProfiler create(final Args args, final CardManager cardManager, final TargetController targetController, final CtModel model) {
         switch (args.mode) {
             case custom:
                 return new CustomProfiler(args, cardManager, model);
@@ -155,7 +158,7 @@ public abstract class AbstractProfiler {
             case time:
                 return new TimeProfiler(args, cardManager, model);
             case spaTime:
-                return new SpaTimeProfiler(args, model);
+                return new SpaTimeProfiler(args, targetController, model);
             default:
                 throw new RuntimeException("Unreachable statement reached!");
         }
@@ -350,7 +353,11 @@ public abstract class AbstractProfiler {
             final byte[] arr = Util.hexStringToByteArray(input);
             CommandAPDU apdu = new CommandAPDU(arr);
             log.info("APDU: {}", input);
-            ResponseAPDU response = cardManager.transmit(apdu);
+            ResponseAPDU response;
+            if (cardManager != null)
+                response = cardManager.transmit(apdu);
+            else
+                response = targetController.sendAPDU(apdu);
             log.info("RESP: SW={}", String.format("%02X", response.getSW1()) + String.format("%02X", response.getSW2()));
             if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
                 throw new RuntimeException("Unexpected error SW received!");
@@ -379,7 +386,10 @@ public abstract class AbstractProfiler {
             elapsedTime = DurationFormatUtils.formatDuration(endTimeMillis, "d' days 'HH:mm:ss.SSS");
             log.info("Elapsed time: {}", elapsedTime);
 
-            cardManager.disconnect(true);
+            if (cardManager != null)
+                cardManager.disconnect(true);
+            else
+                targetController.close();
             log.info("Disconnected from card.");
 
             // process unreached traps
@@ -401,8 +411,14 @@ public abstract class AbstractProfiler {
 
     public void generateCSV() {
         // prepare header data
-        final String atr = args.useSimulator ? "jCardSim"
-                                             : Util.bytesToHex(cardManager.getChannel().getCard().getATR().getBytes());
+        final String atr;
+        if (args.useSimulator) {
+            atr = "jCardSim";
+        } else if (args.mode == Mode.spaTime) {
+            atr = "LEIA";
+        } else {
+            atr = Util.bytesToHex(cardManager.getChannel().getCard().getATR().getBytes());
+        }
 
         String apduHeader, dataSource;
         if (measuredDuringInstallation) {

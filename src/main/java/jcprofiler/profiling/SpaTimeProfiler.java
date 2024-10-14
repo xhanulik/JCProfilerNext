@@ -6,8 +6,6 @@ package jcprofiler.profiling;
 
 import cz.muni.fi.crocs.rcard.client.Util;
 import jcprofiler.args.Args;
-import jcprofiler.card.driver.ATR;
-import jcprofiler.card.driver.ConfigureSmartcardCommand;
 import jcprofiler.card.driver.TargetController;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.similaritysearch.SimilaritySearchController;
@@ -56,8 +54,8 @@ public class SpaTimeProfiler extends AbstractProfiler {
      * @param args        object with commandline arguments
      * @param model       Spoon model
      */
-    public SpaTimeProfiler(final Args args, final CtModel model) {
-        super(args, null, JCProfilerUtil.getProfiledMethod(model, args.executable), null);
+    public SpaTimeProfiler(final Args args, TargetController targetController, final CtModel model) {
+        super(args, null, targetController, JCProfilerUtil.getProfiledMethod(model, args.executable), null);
     }
 
     /**
@@ -69,18 +67,11 @@ public class SpaTimeProfiler extends AbstractProfiler {
     protected void profileImpl() {
         try {
             // prepare target LEIA controller
-            target = new TargetController();
-            target.open();
-            if (!target.isCardInserted())
-                throw new RuntimeException("No card inserted into LEIA board!");
-            target.configureSmartcard(ConfigureSmartcardCommand.T.T1, 0, 0, true, true);
-            ATR atr = target.getATR();
-            System.out.printf("We are using protocol T=%d and the frequency of the ISO7816 clock is %d kHz !\n", atr.tProtocolCurr, atr.fMaxCurr / 1000);
-            target.resetTriggerStrategy();
+            targetController.resetTriggerStrategy();
 
             // find and prepare oscilloscope
             oscilloscope = AbstractOscilloscope.create();
-            // TODO: Add support for variating arguments
+//            // TODO: Add support for variating arguments
             oscilloscope.setup();
             if (args.saveSubtraces) {
                 // create director for subtraces
@@ -91,11 +82,17 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
             // generate profiling inputs
             generateInputs(args.repeatCount);
+            generateAuxiliaryInputs();
 
            // load delimiter trace
             delimiterTrace = DataManager.loadTrace(args.delimiterFile.toAbsolutePath().toString(), true);
 
             for (int round = 1; round <= args.repeatCount; round++) {
+                // run multiple APDU before measuring, if specified
+                targetController.resetTriggerStrategy();
+                if (args.multiApduFile != null)
+                    sendAuxiliaryInputs(round);
+
                 // get APDU which will be measured
                 final CommandAPDU triggerAPDU = getInputAPDU(round);
                 final String input = Util.bytesToHex(triggerAPDU.getBytes());
@@ -124,7 +121,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
             if (oscilloscope != null)
                 oscilloscope.finish();
             if (target != null)
-                target.close();
+                targetController.close();
             throw new RuntimeException(e);
         }
 
@@ -139,22 +136,18 @@ public class SpaTimeProfiler extends AbstractProfiler {
      * @throws CardException    if the card connection failed
      * @throws RuntimeException if setting the next fatal performance trap failed
      */
-    private void profileSingleStep(CommandAPDU triggerAPDU, Path tracePath) throws CardException {
+    private void profileSingleStep(CommandAPDU triggerAPDU, Path tracePath) {
         // reset triggers
-        target.resetTriggerStrategy();
-
-        // send APDU before the measured APDU
-        // TODO: add multiplce APDU support
-
+        targetController.setPreSendAPDUTriggerStrategy();
 
         // start measuring on oscilloscope
         oscilloscope.startMeasuring();
 
         // send profiled APDu to card
-        ResponseAPDU response = target.sendAPDU(triggerAPDU);
+        ResponseAPDU response = targetController.sendAPDU(triggerAPDU);
 
         // stored measured data into CSV
-        // TODO: possibility for getting the direct values into doubl[] array
+        // TODO: possibility for getting the direct values into double[] array
         try {
             oscilloscope.store(tracePath, 5000); // TODO: variable cut-off frequency
         } catch (Exception e) {
@@ -215,12 +208,12 @@ public class SpaTimeProfiler extends AbstractProfiler {
                 Boundaries startDelimiter = similaritiesBoundaries.get(delIndex - 1);
                 Boundaries endDelimiter = similaritiesBoundaries.get(delIndex);
                 long elapsedTime = endDelimiter.getLowerBoundNano() - startDelimiter.getUpperBoundNano();
-                System.out.printf("Operation length (%d -> %d): %d ns\n", delIndex - 1, delIndex, elapsedTime);
+                //System.out.printf("Operation length (%d -> %d): %d ns\n", delIndex - 1, delIndex, elapsedTime);
                 numberOfSubtrace++;
 
                 // store time for given trapID
                 trapID = getTrapID(numberOfSubtrace);
-                log.info("Duration: {} ns", elapsedTime);
+                log.info("Trap ID {} duration: {} ns", trapID, elapsedTime);
                 measurements.computeIfAbsent(getTrapName(trapID), k -> new ArrayList<>()).add(elapsedTime);
 
                 // save CSV for subtrace
@@ -237,7 +230,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
                             operationTrace, startDelimiter.getLastIndex(), endDelimiter.getFirstIndex());
                 }
             }
-            System.out.printf("%f - %f\n", similaritiesBoundaries.get(delIndex).getLowerBound(), similaritiesBoundaries.get(delIndex).getUpperBound());
+            //System.out.printf("%f - %f\n", similaritiesBoundaries.get(delIndex).getLowerBound(), similaritiesBoundaries.get(delIndex).getUpperBound());
         }
         return 0;
     }

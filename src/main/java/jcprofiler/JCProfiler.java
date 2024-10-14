@@ -6,6 +6,7 @@ package jcprofiler;
 import cz.muni.fi.crocs.rcard.client.CardManager;
 
 import jcprofiler.args.Args;
+import jcprofiler.card.driver.TargetController;
 import jcprofiler.compilation.Compiler;
 import jcprofiler.installation.Installer;
 import jcprofiler.instrumentation.Instrumenter;
@@ -74,6 +75,7 @@ public class JCProfiler {
 
         // Installation
         CardManager cardManager = null;
+        TargetController targetController = null; // TODO: create uniform environment for CardManager vs LEIA board
         if (args.startFrom.ordinal() <= Stage.installation.ordinal()) {
             // noop for --simulator
             if (args.useSimulator) {
@@ -91,15 +93,28 @@ public class JCProfiler {
         // Profiling
         if (args.startFrom.ordinal() <= Stage.profiling.ordinal()) {
             // Connect if the installation was skipped or simulator is used
-            if (cardManager == null)
+            if (cardManager == null && args.mode != Mode.spaTime) {
                 // TODO: move connection stuff to a separate class?
                 cardManager = Installer.connect(args, entryPoint);
+             } else {
+                // Only for direct access through LEIA board driver (not for applet installation)
+                targetController = Installer.connect(args);
+            }
 
             log.info("Profiling started.");
-            final AbstractProfiler profiler = AbstractProfiler.create(args, cardManager, model);
-            profiler.profile();
-            profiler.generateCSV();
+            try {
+                final AbstractProfiler profiler = AbstractProfiler.create(args, cardManager, targetController, model);
+                profiler.profile();
+                profiler.generateCSV();
+            } catch (Exception e) {
+                if (targetController != null)
+                    targetController.close();
+                throw e;
+            }
+
             log.info("Profiling complete.");
+            if (targetController != null)
+                targetController.close();
         }
 
         if (args.stopAfter == Stage.profiling)

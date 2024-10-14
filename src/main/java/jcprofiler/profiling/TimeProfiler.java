@@ -42,7 +42,7 @@ public class TimeProfiler extends AbstractProfiler {
      * @param model       Spoon model
      */
     public TimeProfiler(final Args args, final CardManager cardManager, final CtModel model) {
-        super(args, cardManager, JCProfilerUtil.getProfiledMethod(model, args.executable),
+        super(args, cardManager, null, JCProfilerUtil.getProfiledMethod(model, args.executable),
               /* customInsField */ "INS_PERF_SETSTOP");
     }
 
@@ -63,7 +63,7 @@ public class TimeProfiler extends AbstractProfiler {
             if (args.multiApduFile != null)
                 generateAuxiliaryInputs();
             for (int round = 1; round <= args.repeatCount; round++) {
-                // run multiple APDU before measuring, if specify
+                // run multiple APDU before measuring, if specified
                 if (args.multiApduFile != null)
                     sendAuxiliaryInputs(round);
 

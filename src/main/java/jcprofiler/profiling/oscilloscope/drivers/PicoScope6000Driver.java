@@ -6,8 +6,8 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
-import oscilloscope.AbstractOscilloscope;
-import oscilloscope.drivers.libraries.PicoScope6000Library;
+import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
+import jcprofiler.profiling.oscilloscope.drivers.libraries.PicoScope6000Library;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
