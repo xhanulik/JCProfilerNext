@@ -36,7 +36,6 @@ public class SpaTimeProfiler extends AbstractProfiler {
     // use LinkedHashX to preserve insertion order
     private final Map<String, List<Long>> measurements = new LinkedHashMap<>();
     private static Trace delimiterTrace = null;
-    String traceFile = "trace";
     Path subtracesDirectory = null;
     int delimiterNum = trapNameMap.size();
 
@@ -73,7 +72,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
             oscilloscope = AbstractOscilloscope.create();
             // TODO: Add support for variating arguments
             oscilloscope.setup();
-            if (args.saveSubtraces) {
+            if (args.traceDir != null) {
                 // create director for subtraces
                 subtracesDirectory = args.traceDir.resolve("subtracesDirectory");
             }
@@ -98,14 +97,10 @@ public class SpaTimeProfiler extends AbstractProfiler {
                 final String input = Util.bytesToHex(triggerAPDU.getBytes());
                 log.info("Round: {}/{} APDU: {}", round, args.repeatCount, input);
 
-                // create file for storing the final trace
-                Path traceFilePath = args.traceDir.resolve(traceFile + "_" + round + ".csv");
-
                 // run operation and oscilloscope measuring
-                Trace trace = profileSingleStep(triggerAPDU, traceFilePath);
+                Trace trace = profileSingleStep(triggerAPDU);
 
                 // trace is stored for now in CSV parse trace for times
-                // TODO: add support for extraction directly from double[] arrays returned from picoscope
                 if (extractTimes(trace, round) != 0) {
                     successfulExtractions += 1;
                     // extraction failed, all measurements for given trigger APDU is null
@@ -135,7 +130,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
      * @throws CardException    if the card connection failed
      * @throws RuntimeException if setting the next fatal performance trap failed
      */
-    private Trace profileSingleStep(CommandAPDU triggerAPDU, Path tracePath) throws CardException {
+    private Trace profileSingleStep(CommandAPDU triggerAPDU) throws CardException {
         // reset triggers
         targetController.setPreSendAPDUTriggerStrategy();
 
@@ -148,7 +143,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
         // stored measured data into CSV
         Trace trace;
         try {
-            trace = oscilloscope.store(5000); // TODO: variable cut-off frequency
+            trace = oscilloscope.getTrace(5000); // TODO: variable cut-off frequency
         } catch (Exception e) {
             throw new RuntimeException("Storage of profiled data unsuccessfull!");
         }
@@ -175,6 +170,14 @@ public class SpaTimeProfiler extends AbstractProfiler {
     }
 
     private int extractTimes(Trace operationTrace , int round) throws IOException, InterruptedException {
+        // Save trace
+        if (args.traceDir != null) {
+            // adjust main trace file name
+            Path currentTracePath = args.traceDir.resolve("trace_" + round + ".csv");
+            DataManager.saveTrace(currentTracePath.toAbsolutePath().toString(),
+                    operationTrace, 0, operationTrace.getDataCount() - 1);
+            log.debug("Trace {} saved.", currentTracePath.getFileName());
+        }
 
         // perform similarity search
         log.debug("Starting trace extraction");
@@ -198,39 +201,41 @@ public class SpaTimeProfiler extends AbstractProfiler {
         Collections.sort(similaritiesBoundaries);
 
         // go over triples and extract times between them
+        long timeSum = 0;
         int numberOfSubtrace = 0; // for storing purposes
-        short trapID = getTrapID(numberOfSubtrace);
-        measurements.computeIfAbsent(getTrapName(trapID), k -> new ArrayList<>()).add(null);
         for (int delIndex = 0; delIndex < similaritiesBoundaries.size(); delIndex++) {
             if (delIndex % args.delimiterPatternNum == 0 && delIndex != 0) {
                 // get time between this and previous triple
                 Boundaries startDelimiter = similaritiesBoundaries.get(delIndex - 1);
                 Boundaries endDelimiter = similaritiesBoundaries.get(delIndex);
                 long elapsedTime = endDelimiter.getLowerBoundNano() - startDelimiter.getUpperBoundNano();
-                //System.out.printf("Operation length (%d -> %d): %d ns\n", delIndex - 1, delIndex, elapsedTime);
+                timeSum += elapsedTime;
+                System.out.printf("Operation: %d ns -> %d ns\n",startDelimiter.getUpperBoundNano(), endDelimiter.getLowerBoundNano());
                 numberOfSubtrace++;
 
                 // store time for given trapID
-                trapID = getTrapID(numberOfSubtrace);
-                log.info("Trap ID {} duration: {} ns", trapID, elapsedTime);
+                short trapID = getTrapID(numberOfSubtrace);
+                log.debug("Trap ID {} duration: {} ns", trapID, elapsedTime);
                 measurements.computeIfAbsent(getTrapName(trapID), k -> new ArrayList<>()).add(elapsedTime);
 
                 // save CSV for subtrace
-                if (args.saveSubtraces) {
+                if (args.traceDir != null) {
                     try {
                         Files.createDirectories(subtracesDirectory);
                     } catch (IOException e) {
                         System.out.println("Failed to create the directory: " + e.getMessage());
                     }
                     // adjust main trace file name
-                    Path currentSubtracePath = subtracesDirectory.resolve(traceFile + "_" + round + "_" + numberOfSubtrace + ".csv");
+                    Path currentSubtracePath = subtracesDirectory.resolve("trace_" + round + "_" + numberOfSubtrace + ".csv");
                     // save subtrace
                     DataManager.saveTrace(currentSubtracePath.toAbsolutePath().toString(),
                             operationTrace, startDelimiter.getLastIndex(), endDelimiter.getFirstIndex());
+                    log.debug("Subtrace {} saved.", currentSubtracePath.getFileName());
                 }
             }
-            //System.out.printf("%f - %f\n", similaritiesBoundaries.get(delIndex).getLowerBound(), similaritiesBoundaries.get(delIndex).getUpperBound());
         }
+        measurements.computeIfAbsent(getTrapName(getTrapID(0)), k -> new ArrayList<>()).add(timeSum);
+        log.debug("Trace extraction finished successfuly");
         return 0;
     }
 

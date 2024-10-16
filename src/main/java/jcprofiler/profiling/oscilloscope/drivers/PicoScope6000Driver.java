@@ -222,7 +222,8 @@ public class PicoScope6000Driver extends AbstractOscilloscope {
     }
 
     @Override
-    public Trace store(int cutOffFrequency) {
+    public Trace getTrace(int cutOffFrequency) {
+        // TODO
         return null;
     }
 

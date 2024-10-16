@@ -153,19 +153,14 @@ public class Args {
     public Path multiApduFile;
 
     @Parameter(names = {"--trace-dir"},
-            description = "Path to the directory where the SPA traces are saved",
+            description = "Path to the directory where the SPA traces are saved, if not specify, the traces are not saved",
             converter = DirectoryPathConverter.class)
-    public Path traceDir;
+    public Path traceDir = null;
 
     @Parameter(names = {"--delimiter"},
             description = "Path to the CSV delimiter file",
             converter = FilePathConverter.class)
     public Path delimiterFile;
-
-    @Parameter(names = {"--save-subtraces"},
-            description = "Whether to save extracted subtraces or not",
-            converter = BooleanConverter.class)
-    public boolean saveSubtraces = false;
 
     @Parameter(names = {"--delimiter-num"},
             description = "Number of patterns needed to construct the delimiter for SPA trace extraction",

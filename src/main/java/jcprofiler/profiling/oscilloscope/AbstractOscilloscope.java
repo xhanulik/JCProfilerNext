@@ -137,6 +137,6 @@ public abstract class AbstractOscilloscope {
     public abstract void startMeasuring();
     public abstract void stopDevice();
     public abstract void store(Path file, int cutOffFrequency) throws IOException;
-    public abstract Trace store(int cutOffFrequency);
+    public abstract Trace getTrace(int cutOffFrequency);
     public abstract void finish();
 }

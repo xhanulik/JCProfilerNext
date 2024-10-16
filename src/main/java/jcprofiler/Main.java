@@ -108,9 +108,6 @@ public class Main {
 
         // validate SPA time mode
         if (args.mode == Mode.spaTime) {
-            // --trace-dir must be set
-            if (args.traceDir == null)
-                throw new UnsupportedOperationException("Option --trace-dir must be set in spaTime mode!");
             // --delimiter must be set
             if (args.delimiterFile == null)
                 throw new UnsupportedOperationException("Option --delimiter must be set to CSV file in spaTime mode!");

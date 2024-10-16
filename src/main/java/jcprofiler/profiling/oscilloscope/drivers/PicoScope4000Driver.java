@@ -222,7 +222,7 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
     }
 
     @Override
-    public Trace store(int cutOffFrequency) {
+    public Trace getTrace(int cutOffFrequency) {
         double[] voltValues = getVoltValues();
         return createTrace(voltValues, voltValues.length, cutOffFrequency, timeInterval);
     }
