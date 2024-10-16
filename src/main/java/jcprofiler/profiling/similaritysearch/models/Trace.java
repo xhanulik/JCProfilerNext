@@ -80,6 +80,16 @@ public class Trace {
         this.voltageMaximum = voltageMaximum;
         this.voltageMinimum = voltageMinimum;
     }
+
+    public Trace(String voltageUnit, String timeUnit, int dataCount, double[] voltageArray, double[] timeArray) {
+        this.voltageUnit = voltageUnit;
+        this.timeUnit = timeUnit;
+        this.dataCount = dataCount;
+        this.voltageArray = voltageArray;
+        this.timeArray = timeArray;
+        this.voltageMaximum = Double.NEGATIVE_INFINITY;
+        this.voltageMinimum = Double.POSITIVE_INFINITY;
+    }
     
     /**
      * Adds pair of data to the trace.

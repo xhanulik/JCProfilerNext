@@ -71,14 +71,14 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
             // find and prepare oscilloscope
             oscilloscope = AbstractOscilloscope.create();
-//            // TODO: Add support for variating arguments
+            // TODO: Add support for variating arguments
             oscilloscope.setup();
             if (args.saveSubtraces) {
                 // create director for subtraces
                 subtracesDirectory = args.traceDir.resolve("subtracesDirectory");
             }
 
-            // TODO: resetApplet() before first run;
+            resetApplet();
 
             // generate profiling inputs
             generateInputs(args.repeatCount);
@@ -102,11 +102,11 @@ public class SpaTimeProfiler extends AbstractProfiler {
                 Path traceFilePath = args.traceDir.resolve(traceFile + "_" + round + ".csv");
 
                 // run operation and oscilloscope measuring
-                profileSingleStep(triggerAPDU, traceFilePath);
+                Trace trace = profileSingleStep(triggerAPDU, traceFilePath);
 
-                // trace is stored for now in CSVparse trace for times
+                // trace is stored for now in CSV parse trace for times
                 // TODO: add support for extraction directly from double[] arrays returned from picoscope
-                if (extractTimes(traceFilePath, round) != 0) {
+                if (extractTimes(trace, round) != 0) {
                     successfulExtractions += 1;
                     // extraction failed, all measurements for given trigger APDU is null
                     for (short trapID : trapNameMap.keySet()) {
@@ -131,12 +131,11 @@ public class SpaTimeProfiler extends AbstractProfiler {
     /**
      * Performs a single time profiling step.  Executes the given APDU and stores the elapsed time.
      *
-     * @param  triggerAPDU APDU to reach the selected fatal trap
-     *
+     * @param triggerAPDU APDU to reach the selected fatal trap
      * @throws CardException    if the card connection failed
      * @throws RuntimeException if setting the next fatal performance trap failed
      */
-    private void profileSingleStep(CommandAPDU triggerAPDU, Path tracePath) {
+    private Trace profileSingleStep(CommandAPDU triggerAPDU, Path tracePath) throws CardException {
         // reset triggers
         targetController.setPreSendAPDUTriggerStrategy();
 
@@ -147,9 +146,9 @@ public class SpaTimeProfiler extends AbstractProfiler {
         ResponseAPDU response = targetController.sendAPDU(triggerAPDU);
 
         // stored measured data into CSV
-        // TODO: possibility for getting the direct values into double[] array
+        Trace trace;
         try {
-            oscilloscope.store(tracePath, 5000); // TODO: variable cut-off frequency
+            trace = oscilloscope.store(5000); // TODO: variable cut-off frequency
         } catch (Exception e) {
             throw new RuntimeException("Storage of profiled data unsuccessfull!");
         }
@@ -160,7 +159,9 @@ public class SpaTimeProfiler extends AbstractProfiler {
             throw new RuntimeException("Unexpected SW received when profiling: %s");
         }
         log.debug("Collecting measurement complete.");
-        // TODO: Add resetApplet() equivalent
+        resetApplet();
+
+        return trace;
     }
 
     private short getTrapID(int index) {
@@ -173,9 +174,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
         return -1;
     }
 
-    private int extractTimes(Path traceFilePath, int round) throws IOException, InterruptedException {
-        // load trace from CSV file into inner representation
-        Trace operationTrace = DataManager.loadTrace(traceFilePath.toAbsolutePath().toString(), false);
+    private int extractTimes(Trace operationTrace , int round) throws IOException, InterruptedException {
 
         // perform similarity search
         log.debug("Starting trace extraction");
@@ -183,7 +182,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
                 SimilaritySearchController.MANHATTAN_DISTANCE_ALGORITHM, 24);
         // test number of found similarities
         if (similarities.isEmpty() || similarities.size() != delimiterNum * args.delimiterPatternNum) {
-            log.error("Unexpected number of delimiters found (expected %d, found %d)", delimiterNum, similarities.size());
+            log.error("Unexpected number of delimiters found (expected {}, found {})", delimiterNum, similarities.size());
             log.error("Skipping trace");
             return 1;
         }

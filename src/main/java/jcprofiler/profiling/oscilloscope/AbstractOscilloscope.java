@@ -2,6 +2,7 @@ package jcprofiler.profiling.oscilloscope;
 
 import jcprofiler.profiling.oscilloscope.drivers.PicoScope4000Driver;
 import jcprofiler.profiling.oscilloscope.drivers.PicoScope6000Driver;
+import jcprofiler.profiling.similaritysearch.models.Trace;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -84,6 +85,23 @@ public abstract class AbstractOscilloscope {
         }
     }
 
+    protected Trace createTrace(double[] voltValues, int sampleNumber, int cutOffFrequency, int timeInterval) {
+        int samplingFrequency = getSamplingFrequency(timeInterval);
+        LowPassFilter filter = null;
+
+        if (cutOffFrequency > 0)
+            filter = new LowPassFilter(samplingFrequency, cutOffFrequency);
+
+        double[] timeValues = new double[sampleNumber];
+        for (int i = 0; i < sampleNumber; i++) {
+            timeValues[i] = (i * timeInterval) / 1e6;
+            if (filter != null)
+                voltValues[i] = filter.applyLowPassFilter(voltValues[i]);
+        }
+
+        return new Trace("V", "ms", sampleNumber, voltValues, timeValues);
+    }
+
     /**
      * Debug print
      * @param format A format string
@@ -119,5 +137,6 @@ public abstract class AbstractOscilloscope {
     public abstract void startMeasuring();
     public abstract void stopDevice();
     public abstract void store(Path file, int cutOffFrequency) throws IOException;
+    public abstract Trace store(int cutOffFrequency);
     public abstract void finish();
 }

@@ -7,6 +7,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.oscilloscope.drivers.libraries.PicoScope4000Library;
+import jcprofiler.profiling.similaritysearch.models.Trace;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -29,10 +30,9 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
     int timeInterval = 0; //ns
     int numberOfSamples = 2_000_000;
     short oversample = 0;
-
     int maxAdcValue = 32767;
-
     final int timebaseMax = 100;
+
     @Override
     public boolean connect() {
         ShortByReference handleRef = new ShortByReference();
@@ -190,10 +190,7 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
         System.out.printf("Captured %d samples\n", adcValuesLength.getValue());
     }
 
-
-
-    @Override
-    public void store(Path file, int cutOffFrequency) {
+    private double[] getVoltValues() {
         // wait for all samples
         waitForSamples();
         // set buffer for final values
@@ -215,8 +212,19 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
             buffer.read(0, adcValues, 0, adcValues.length);
         }
         // convert into volt values
-        double[] voltValues = adc2Volt(adcValues, maxAdcValue, thresholdVoltageRange);
-        writeIntoCSV(voltValues, adcValues.length, file, cutOffFrequency, timeInterval);
+        return adc2Volt(adcValues, maxAdcValue, thresholdVoltageRange);
+    }
+
+    @Override
+    public void store(Path file, int cutOffFrequency) {
+        double[] voltValues = getVoltValues();
+        writeIntoCSV(voltValues, voltValues.length, file, cutOffFrequency, timeInterval);
+    }
+
+    @Override
+    public Trace store(int cutOffFrequency) {
+        double[] voltValues = getVoltValues();
+        return createTrace(voltValues, voltValues.length, cutOffFrequency, timeInterval);
     }
 
     @Override
@@ -246,7 +254,7 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
         }
 
         // close device
-        int status = PicoScope4000Library.INSTANCE.ps4000CloseUnit(handle);
+        PicoScope4000Library.INSTANCE.ps4000CloseUnit(handle);
         handle = 0;
         System.out.printf("Device %s disconnected\n", deviceName);
     }

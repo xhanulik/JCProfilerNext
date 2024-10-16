@@ -8,6 +8,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.oscilloscope.drivers.libraries.PicoScope6000Library;
+import jcprofiler.profiling.similaritysearch.models.Trace;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -218,6 +219,11 @@ public class PicoScope6000Driver extends AbstractOscilloscope {
         // convert into volt values
         double[] voltValues = adc2Volt(adcValues, maxAdcValue, thresholdVoltageRange);
         writeIntoCSV(voltValues, adcValues.length, file, cutOffFrequency, timeInterval);
+    }
+
+    @Override
+    public Trace store(int cutOffFrequency) {
+        return null;
     }
 
     @Override
