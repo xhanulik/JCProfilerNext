@@ -5,12 +5,13 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
+import jcprofiler.args.Args;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.oscilloscope.drivers.libraries.PicoScope4000Library;
 import jcprofiler.profiling.similaritysearch.models.Trace;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
+
 
 public class PicoScope4000Driver extends AbstractOscilloscope {
 
@@ -20,18 +21,16 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
     private final short channelRange = (short) PicoScope4000Library.PicoScope4000Range.PS4000_500MV.ordinal();
     private final short triggerChannel = (short) PicoScope4000Library.PicoScope4000Channel.PS4000_CHANNEL_B.ordinal();
     private final short triggerChannelRange = (short) PicoScope4000Library.PicoScope4000Range.PS4000_1V.ordinal();
-    private final double voltageThreshold = 1; //V
-    private final double thresholdVoltageRange = 2.0;
-    short delay = 0; // no data before trigger
-    short autoTriggerMs = 5000;
     short direction = (short) PicoScope4000Library.PicoScope4000ThresholdDirection.RISING.ordinal();
     int timebase = 0;
-    int wantedTimeInterval = 250; //ns
     int timeInterval = 0; //ns
-    int numberOfSamples = 2_000_000;
     short oversample = 0;
     int maxAdcValue = 32767;
     final int timebaseMax = 100;
+
+    public PicoScope4000Driver(Args args) {
+        super(args);
+    }
 
     @Override
     public boolean connect() {
@@ -110,7 +109,7 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
             } catch (Exception e) {
                 throw new RuntimeException("ps4000GetTimebase failed with exception: " + e.getMessage());
             }
-            if (status == PicoScope4000Library.PS4000_OK && currentTimeInterval.getValue() > wantedTimeInterval) {
+            if (status == PicoScope4000Library.PS4000_OK && currentTimeInterval.getValue() > wantedTimeIntervalNs) {
                 break;
             }
             timeInterval = currentTimeInterval.getValue();
@@ -213,12 +212,6 @@ public class PicoScope4000Driver extends AbstractOscilloscope {
         }
         // convert into volt values
         return adc2Volt(adcValues, maxAdcValue, thresholdVoltageRange);
-    }
-
-    @Override
-    public void store(Path file, int cutOffFrequency) {
-        double[] voltValues = getVoltValues();
-        writeIntoCSV(voltValues, voltValues.length, file, cutOffFrequency, timeInterval);
     }
 
     @Override

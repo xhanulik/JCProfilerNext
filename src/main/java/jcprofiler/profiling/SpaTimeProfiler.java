@@ -69,8 +69,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
             targetController.resetTriggerStrategy();
 
             // find and prepare oscilloscope
-            oscilloscope = AbstractOscilloscope.create();
-            // TODO: Add support for variating arguments
+            oscilloscope = AbstractOscilloscope.create(args);
             oscilloscope.setup();
             if (args.traceDir != null) {
                 // create director for subtraces
@@ -210,7 +209,6 @@ public class SpaTimeProfiler extends AbstractProfiler {
                 Boundaries endDelimiter = similaritiesBoundaries.get(delIndex);
                 long elapsedTime = endDelimiter.getLowerBoundNano() - startDelimiter.getUpperBoundNano();
                 timeSum += elapsedTime;
-                System.out.printf("Operation: %d ns -> %d ns\n",startDelimiter.getUpperBoundNano(), endDelimiter.getLowerBoundNano());
                 numberOfSubtrace++;
 
                 // store time for given trapID

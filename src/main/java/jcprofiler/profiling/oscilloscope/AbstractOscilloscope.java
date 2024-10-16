@@ -1,5 +1,6 @@
 package jcprofiler.profiling.oscilloscope;
 
+import jcprofiler.args.Args;
 import jcprofiler.profiling.oscilloscope.drivers.PicoScope4000Driver;
 import jcprofiler.profiling.oscilloscope.drivers.PicoScope6000Driver;
 import jcprofiler.profiling.similaritysearch.models.Trace;
@@ -11,8 +12,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 
 public abstract class AbstractOscilloscope {
-    final private boolean DEBUG = false;
     protected int PICO_VARIANT_INFO = 3;
+
+    // setup parameters
+    protected double voltageThreshold;
+    protected double thresholdVoltageRange;
+    protected short delay;
+    protected short autoTriggerMs;
+    protected int wantedTimeIntervalNs;
+    protected int numberOfSamples;
 
     /**
      * Array of implemented oscilloscope drivers
@@ -22,11 +30,14 @@ public abstract class AbstractOscilloscope {
             PicoScope6000Driver.class
     };
 
-//    protected static Args args = null;
-
-//    protected AbstractOscilloscope(Args args) {
-//        AbstractOscilloscope.args = args;
-//    }
+    public AbstractOscilloscope(Args args) {
+        this.voltageThreshold = args.voltageThreshold;
+        this.thresholdVoltageRange = 2 * voltageThreshold;
+        this.delay = (short) args.delay;
+        this.autoTriggerMs = (short) args.autoTrigger;
+        this.wantedTimeIntervalNs = args.timeInterval;
+        this.numberOfSamples = args.numberOfSamples;
+    }
 
     /**
      * Convert ADC to volt values
@@ -58,33 +69,6 @@ public abstract class AbstractOscilloscope {
         return (int) (1 / (timeIntervalNs / 1_000_000_000.0));
     }
 
-    protected void writeIntoCSV(double[] voltValues, int sampleNumber, Path filePath, int cutOffFrequency, int timeInterval) {
-        int samplingFrequency = getSamplingFrequency(timeInterval);
-        LowPassFilter filter = null;
-
-        if (cutOffFrequency > 0)
-            filter = new LowPassFilter(samplingFrequency, cutOffFrequency);
-
-        // Write into CSV file
-        try (FileWriter writer = new FileWriter(filePath.toAbsolutePath().toFile())) {
-            writer.append("Time,Channel\n");
-            writer.append("(ms),(V)\n");
-            writer.append(",\n");
-
-            for (int i = 0; i < sampleNumber; i++) {
-                if (filter != null)
-                    writer.append(String.format("%9f,%.9f\n", (i * timeInterval) / 1e6, filter.applyLowPassFilter(voltValues[i])));
-                else
-                    writer.append(String.format("%9f,%.9f\n", (i * timeInterval) / 1e6, voltValues[i]));
-            }
-
-            System.out.println("Data has been written to " + filePath);
-
-        } catch (IOException e) {
-            throw new RuntimeException("Writing into CSV failed");
-        }
-    }
-
     protected Trace createTrace(double[] voltValues, int sampleNumber, int cutOffFrequency, int timeInterval) {
         int samplingFrequency = getSamplingFrequency(timeInterval);
         LowPassFilter filter = null;
@@ -108,6 +92,7 @@ public abstract class AbstractOscilloscope {
      * @param args Arguments
      */
     protected void printDebug(String format, Object ... args) {
+        boolean DEBUG = false;
         if (DEBUG) {
             System.out.printf(format, args);
         }
@@ -117,11 +102,11 @@ public abstract class AbstractOscilloscope {
      *
      * @return constructed {@link AbstractOscilloscope} object
      */
-    public static AbstractOscilloscope create() {
+    public static AbstractOscilloscope create(Args args) {
         for (Class<?> driver : oscilloscopeDrivers) {
             try {
-                Constructor<?> constructor = driver.getConstructor();
-                AbstractOscilloscope device = (AbstractOscilloscope) constructor.newInstance();
+                Constructor<?> constructor = driver.getConstructor(Args.class);
+                AbstractOscilloscope device = (AbstractOscilloscope) constructor.newInstance(args);
                 if (device.connect()) {
                     return device;
                 }
@@ -136,7 +121,6 @@ public abstract class AbstractOscilloscope {
     public abstract void setup();
     public abstract void startMeasuring();
     public abstract void stopDevice();
-    public abstract void store(Path file, int cutOffFrequency) throws IOException;
     public abstract Trace getTrace(int cutOffFrequency);
     public abstract void finish();
 }

@@ -6,12 +6,12 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.ShortByReference;
+import jcprofiler.args.Args;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.oscilloscope.drivers.libraries.PicoScope6000Library;
 import jcprofiler.profiling.similaritysearch.models.Trace;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
 public class PicoScope6000Driver extends AbstractOscilloscope {
     short handle = 0;
@@ -34,6 +34,10 @@ public class PicoScope6000Driver extends AbstractOscilloscope {
     int maxAdcValue = 32767;
 
     final int timebaseMax = 100;
+
+    public PicoScope6000Driver(Args args) {
+        super(args);
+    }
 
 
     @Override
@@ -195,7 +199,7 @@ public class PicoScope6000Driver extends AbstractOscilloscope {
     }
 
     @Override
-    public void store(Path file, int cutOffFrequency) {
+    public Trace getTrace(int cutOffFrequency) {
         // wait until all data are measured
         waitForSamples();
         // set buffer for final values
@@ -218,12 +222,7 @@ public class PicoScope6000Driver extends AbstractOscilloscope {
         }
         // convert into volt values
         double[] voltValues = adc2Volt(adcValues, maxAdcValue, thresholdVoltageRange);
-        writeIntoCSV(voltValues, adcValues.length, file, cutOffFrequency, timeInterval);
-    }
-
-    @Override
-    public Trace getTrace(int cutOffFrequency) {
-        // TODO
+        // TODO: CReate and return trace
         return null;
     }
 
