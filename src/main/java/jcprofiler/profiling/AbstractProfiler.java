@@ -333,7 +333,7 @@ public abstract class AbstractProfiler {
 
     protected void generateAuxiliaryInputs() {
         if (args.multiApduFile == null)
-            throw new RuntimeException("No file with auxiliary APDU specified");
+            return;
         log.info("Choosing auxiliary inputs from text file {}.", args.multiApduFile);
         try {
             final List<String> lines = Files.readAllLines(args.multiApduFile);
@@ -350,9 +350,8 @@ public abstract class AbstractProfiler {
     }
 
     protected void sendAuxiliaryInputs(int round) throws CardException {
-
         if (auxInputs.isEmpty())
-            throw new RuntimeException("File with auxiliary APDU empty");
+            return;
         log.info("Round {}/{}, Auxiliary APDU:", round, args.repeatCount);
         for (String input : auxInputs) {
             final byte[] arr = Util.hexStringToByteArray(input);
