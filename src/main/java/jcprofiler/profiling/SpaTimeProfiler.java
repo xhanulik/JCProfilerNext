@@ -180,14 +180,17 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
         // perform similarity search
         log.debug("Starting trace extraction");
+        int totalNumSim = delimiterNum * args.delimiterPatternNum;
+        log.debug("Searching for {} similarities", totalNumSim);
         SortedSet<Similarity> similarities = SimilaritySearchController.searchTraceForOperation(operationTrace, delimiterTrace,
-                SimilaritySearchController.MANHATTAN_DISTANCE_ALGORITHM, 24);
+                SimilaritySearchController.MANHATTAN_DISTANCE_ALGORITHM, totalNumSim);
         // test number of found similarities
-        if (similarities.isEmpty() || similarities.size() != delimiterNum * args.delimiterPatternNum) {
-            log.error("Unexpected number of delimiters found (expected {}, found {})", delimiterNum, similarities.size());
+        if (similarities.isEmpty() || similarities.size() != totalNumSim) {
+            log.error("Unexpected number of delimiters found (expected {}, found {})", totalNumSim, similarities.size());
             log.error("Skipping trace");
             return 1;
         }
+        log.debug("{} similarities extracted successfuly", totalNumSim);
 
         // convert into boundaries set
         List<Boundaries> similaritiesBoundaries = new ArrayList<>();
@@ -202,6 +205,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
         // go over triples and extract times between them
         long timeSum = 0;
         int numberOfSubtrace = 0; // for storing purposes
+        log.debug("Computing times");
         for (int delIndex = 0; delIndex < similaritiesBoundaries.size(); delIndex++) {
             if (delIndex % args.delimiterPatternNum == 0 && delIndex != 0) {
                 // get time between this and previous triple
