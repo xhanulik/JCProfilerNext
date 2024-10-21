@@ -43,7 +43,7 @@ public class MultiThreadController {
         int delimitingNumber = trace.getDataCount() / numberOfProcessors;
         Thread[] threads = new Thread[numberOfProcessors];
         SimilaritySearchStrategy[] strategies = new SimilaritySearchStrategy[numberOfProcessors];
-        SimilaritySearchStrategy resultStrategy = new TopNStrategy(TopNStrategy.TOP_N_STRATEGY_COUNT);
+        SimilaritySearchStrategy resultStrategy = new TopNStrategy(TopNStrategyCount);
         createAndStartThreads(numberOfProcessors, strategies, threads, delimitingNumber, trace, operation, distanceAlgorithm, TopNStrategyCount);
         stopThreadsAndMergeResults(numberOfProcessors, threads, strategies, resultStrategy);
         return resultStrategy.getSimilarities();
