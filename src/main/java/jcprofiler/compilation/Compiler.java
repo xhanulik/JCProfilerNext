@@ -97,6 +97,7 @@ public class Compiler {
 
         cap.setDebug(false);
         cap.setStrip(false);
+        cap.setInts(true);
 
         cap.setAID(JCProfilerUtil.PACKAGE_AID);
         cap.setJca(entryPoint.getPackage().getSimpleName() + ".jca");
