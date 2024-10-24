@@ -102,6 +102,7 @@ public class Compiler {
         cap.setJca(entryPoint.getPackage().getSimpleName() + ".jca");
         cap.setPackage(entryPoint.getPackage().getQualifiedName());
         cap.setOutput(entryPoint.getSimpleName() + ".cap");
+        cap.setInts(true);
 
         // add applet to the CAP file
         final JCApplet app = cap.createApplet();
