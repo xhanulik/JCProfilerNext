@@ -5,10 +5,15 @@ package jcprofiler.args;
 
 import com.beust.jcommander.Parameter;
 
+import com.beust.jcommander.converters.BooleanConverter;
+import com.beust.jcommander.converters.DoubleConverter;
+import com.beust.jcommander.converters.IntegerConverter;
 import jcprofiler.args.converters.*;
 import jcprofiler.args.validators.*;
 import jcprofiler.util.enums.*;
 
+import org.apache.commons.beanutils.converters.ShortConverter;
+import org.apache.logging.log4j.core.config.plugins.convert.TypeConverters;
 import pro.javacard.JavaCardSDK;
 
 import java.nio.file.Path;
@@ -141,7 +146,7 @@ public class Args {
     public InputDivision inputDivision = InputDivision.none;
 
     @Parameter(names = {"--time-unit"},
-               description = "Time unit to be used in result visualisation (time profiling only)",
+               description = "Time unit to be used in result visualisation (time and spaTime profiling only)",
                converter = TimeUnitConverter.class)
     public TimeUnit timeUnit = TimeUnit.micro;
 
@@ -149,4 +154,49 @@ public class Args {
             description = "Path to a file specifying inputs for multi-APDU run in hex format",
             converter = FilePathConverter.class)
     public Path multiApduFile;
+
+    @Parameter(names = {"--trace-dir"},
+            description = "Path to the directory where the SPA traces are saved, if not specify, the traces are not saved",
+            converter = DirectoryPathConverter.class)
+    public Path traceDir = null;
+
+    @Parameter(names = {"--delimiter"},
+            description = "Path to the CSV delimiter file",
+            converter = FilePathConverter.class)
+    public Path delimiterFile;
+
+    @Parameter(names = {"--delimiter-num"},
+            description = "Number of patterns needed to construct the delimiter for SPA trace extraction",
+            converter = IntegerConverter.class)
+    public int delimiterPatternNum = 3;
+
+    @Parameter(names = {"--voltage-threshold"},
+            description = "Value for threshold of the oscilloscope trigger in Volts",
+            converter = DoubleConverter.class)
+    public double voltageThreshold = 1.0;
+
+    @Parameter(names = {"--delay"},
+            description = "How much data to capture before trigger",
+            converter = IntegerConverter.class)
+    public int delay = 0;
+
+    @Parameter(names = {"--auto-trigger"},
+            description = "After how many milliseconds should the trigger be setup automatically",
+            converter = IntegerConverter.class)
+    public int autoTrigger = 5000;
+
+    @Parameter(names = {"--time-interval"},
+            description = "Time interval between samples in nanoseconds",
+            converter = IntegerConverter.class)
+    public int timeInterval = 250;
+
+    @Parameter(names = {"--samples"},
+            description = "How many samples should be collected for SPA mode",
+            converter = IntegerConverter.class)
+    public int numberOfSamples = 2_000_000;
+
+    @Parameter(names = {"--filter"},
+            description = "Apply low pass filter of given frequency (Hz)",
+            converter = IntegerConverter.class)
+    public int cutOffFrequency = 0;
 }

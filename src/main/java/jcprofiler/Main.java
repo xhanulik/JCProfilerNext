@@ -106,6 +106,17 @@ public class Main {
                         "Visualisation of applet instrumented in custom mode is unsupported!");
         }
 
+        // validate SPA time mode
+        if (args.mode == Mode.spaTime) {
+            // --delimiter must be set
+            if (args.delimiterFile == null)
+                throw new UnsupportedOperationException("Option --delimiter must be set to CSV file in spaTime mode!");
+            if (!(args.startFrom == Stage.instrumentation && (args.stopAfter == Stage.installation || args.stopAfter == Stage.compilation)
+                    || args.startFrom == Stage.profiling)) {
+                throw new UnsupportedOperationException("Installation and profiling cannot be done together in spaTime mode!");
+            }
+        }
+
         // validate --data-regex and --data-file
         if ((args.dataRegex == null) == (args.dataFile == null)) {
             if (args.dataRegex != null)
