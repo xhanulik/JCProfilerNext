@@ -202,8 +202,8 @@ public class SpaTimeProfiler extends AbstractProfiler {
         Collections.sort(similaritiesBoundaries);
 
         // go over triples and extract times between them
-        long timeSum = 0;
         int numberOfSubtrace = 0; // for storing purposes
+        measurements.computeIfAbsent(getTrapName(getTrapID(0)), k -> new ArrayList<>()).add(0L);
         log.debug("Computing times");
         for (int delIndex = 0; delIndex < similaritiesBoundaries.size(); delIndex++) {
             if (delIndex % args.delimiterPatternNum == 0 && delIndex != 0) {
@@ -211,7 +211,6 @@ public class SpaTimeProfiler extends AbstractProfiler {
                 Boundaries startDelimiter = similaritiesBoundaries.get(delIndex - 1);
                 Boundaries endDelimiter = similaritiesBoundaries.get(delIndex);
                 long elapsedTime = endDelimiter.getLowerBoundNano() - startDelimiter.getUpperBoundNano();
-                timeSum += elapsedTime;
                 numberOfSubtrace++;
 
                 // store time for given trapID
