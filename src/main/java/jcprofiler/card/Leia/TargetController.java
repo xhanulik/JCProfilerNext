@@ -36,7 +36,7 @@ public class TargetController {
         }
 
         if (count > 2 || count == 0) {
-            // Do not throw exception so we can call it in loop
+            // Do not throw exception, so we can call it in loop
             return false;
         }
 
@@ -48,7 +48,7 @@ public class TargetController {
                     // Python code uses timeout=1s ~ get bytes immediately when the requested number of bytes are available, otherwise wait until the timeout expires
                     // blocking for write might not be working on other OS than Windows
                     port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING,
-                            1000, 1000);
+                            2000, 0);
                     if (port.openPort()) {
                         serialPort = port;
                         System.out.printf("Serial port %s (%d/%d) is open and ready for communication\n",
