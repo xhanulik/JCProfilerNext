@@ -111,7 +111,7 @@ public class Main {
             // --delimiter must be set
             if (args.delimiterFile == null)
                 throw new UnsupportedOperationException("Option --delimiter must be set to CSV file in spaTime mode!");
-            if (!(args.startFrom == Stage.instrumentation && (args.stopAfter == Stage.installation || args.stopAfter == Stage.compilation)
+            if (!(args.startFrom == Stage.instrumentation && args.stopAfter.ordinal() <= Stage.installation.ordinal()
                     || args.startFrom == Stage.profiling)) {
                 throw new UnsupportedOperationException("Installation and profiling cannot be done together in spaTime mode!");
             }
