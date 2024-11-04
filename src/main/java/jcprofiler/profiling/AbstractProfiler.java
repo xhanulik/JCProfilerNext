@@ -324,14 +324,11 @@ public abstract class AbstractProfiler {
     protected void generateAuxiliaryInputs() {
         if (args.multiApduFile == null)
             return;
-        log.info("Choosing auxiliary inputs from text file {}.", args.multiApduFile);
+        log.info("Processing auxiliary inputs from text file {}.", args.multiApduFile);
         try {
             final List<String> lines = Files.readAllLines(args.multiApduFile);
             for (int i = 1; i <= lines.size(); i++) {
                 final String line = lines.get(i - 1);
-                if (!JCProfilerUtil.isHexString(line))
-                    throw new RuntimeException(String.format(
-                            "Input %s on line %d in file %s is not a valid hexstring!", line, i, args.multiApduFile));
                 auxInputs.add(line);
             }
         } catch (IOException e) {
@@ -343,10 +340,22 @@ public abstract class AbstractProfiler {
         if (auxInputs.isEmpty())
             return;
         log.info("Round {}/{}, Auxiliary APDU:", round, args.repeatCount);
+
+        final Random rdn = new Random();
         for (String input : auxInputs) {
-            final byte[] arr = Util.hexStringToByteArray(input);
+            // generate input from regex
+            log.info("Generating inputs from regular expression {}.", input);
+            final RgxGen rgxGen = RgxGen.parse(input);
+            final String realInput = rgxGen.generate(rdn);
+            if (!JCProfilerUtil.isHexString(realInput))
+                throw new RuntimeException(String.format(
+                        "Input %s generated from the %s regular expression not a valid hexstring!",
+                        realInput, input));
+
+            // send APDU to card
+            final byte[] arr = Util.hexStringToByteArray(realInput);
             CommandAPDU apdu = new CommandAPDU(arr);
-            log.info("APDU: {}", input);
+            log.info("APDU: {}", realInput);
             ResponseAPDU response = cardManager.transmit(apdu);
             log.info("RESP: SW={}", String.format("%02X", response.getSW1()) + String.format("%02X", response.getSW2()));
             if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
