@@ -93,6 +93,8 @@ public abstract class AbstractProfiler {
     /**
      * List of generated inputs
      */
+    final List<Byte> p1Inputs = new ArrayList<>();
+    final List<Byte> p2Inputs = new ArrayList<>();
     protected final List<String> inputs = new ArrayList<>();
 
     /**
@@ -224,6 +226,8 @@ public abstract class AbstractProfiler {
             throw new RuntimeException("Already measured constructors do not support inputs!");
 
         final Random rdn = new Random();
+        final List<Byte> p1UndividedInputs = new ArrayList<>();
+        final List<Byte> p2UndividedInputs = new ArrayList<>();
         final List<String> undividedInputs = new ArrayList<>();
 
         // regex
@@ -244,47 +248,97 @@ public abstract class AbstractProfiler {
             log.info("Choosing inputs from text file {}.", args.dataFile);
 
             try {
+                // Read all inputs from data file along with P1 and P2 when expected
                 final List<String> lines = Files.readAllLines(args.dataFile);
+
+                // Check enough inputs for ordered file
+                if (args.orderDataFile && lines.size() < args.repeatCount) {
+                    throw new RuntimeException("For option --order-data-file the lines of data file must correspond to the repeat count.");
+                }
+
+                // Check valid hex strings
                 for (int i = 1; i <= lines.size(); i++) {
-                    final String line = lines.get(i - 1);
+                    String line = lines.get(i - 1);
+
+                    if (args.paramDataFile) {
+                        String[] columns = line.split(",");
+                        line = columns[2];
+                    }
                     if (!JCProfilerUtil.isHexString(line))
                         throw new RuntimeException(String.format(
                                 "Input %s on line %d in file %s is not a valid hexstring!", line, i, args.dataFile));
                 }
 
-                for (int i = 0; i < size * 100; i++)
-                    undividedInputs.add(lines.get(rdn.nextInt(lines.size())));
+                // Store inputs
+                if (!args.orderDataFile) {
+                    // Random order of inputs
+                    for (int i = 0; i < size * 100; i++) {
+                        String line = lines.get(rdn.nextInt(lines.size()));
+                        if (args.paramDataFile) {
+                            // Read and store also P1 and P2 values
+                            String[] columns = line.split(",");
+                            byte p1 = (byte) Integer.parseInt(columns[0]);
+                            byte p2 = (byte) Integer.parseInt(columns[1]);
+                            line = columns[2];
+                            p1UndividedInputs.add(p1);
+                            p2UndividedInputs.add(p2);
+                        }
+                        undividedInputs.add(line);
+                    }
+                } else {
+                    // Input in order according to the data file
+                    for (int i = 0; i < size; i++) {
+                        String line = lines.get(i);
+                        if (args.paramDataFile) {
+                            // Read and store also P1 and P2 values
+                            String[] columns = line.split(",");
+                            byte p1 = (byte) Integer.parseInt(columns[0]);
+                            byte p2 = (byte) Integer.parseInt(columns[1]);
+                            line = columns[2];
+                            p1UndividedInputs.add(p1);
+                            p2UndividedInputs.add(p2);
+                        }
+                        undividedInputs.add(line);
+                    }
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        // divide the input
-        int oddSize = size & 0x1;
-        switch (args.inputDivision) {
-            case effectiveBitLength:
-                // strings with more leading zero bits will be sorted first
-                undividedInputs.sort(String::compareTo);
+        // divide the inputs only when not in ordered data file or when additional parameters are not specified
+        if (args.orderDataFile || args.paramDataFile) {
+            if (args.paramDataFile) {
+                p1Inputs.addAll(p1UndividedInputs.subList(0, size));
+                p2Inputs.addAll(p2UndividedInputs.subList(0, size));
+            }
 
-                int mid = size / 2;
-                inputs.addAll(undividedInputs.subList(0, mid));
-                inputs.addAll(undividedInputs.subList(undividedInputs.size() - mid - oddSize, undividedInputs.size()));
-                break;
+            inputs.addAll(undividedInputs.subList(0, size));
+        } else {
+            int oddSize = size & 0x1;
+            switch (args.inputDivision) {
+                case effectiveBitLength:
+                    // strings with more leading zero bits will be sorted first
+                    undividedInputs.sort(String::compareTo);
 
-            case hammingWeight:
-                final List<String> hwsorted = undividedInputs.stream()
-                        .map(s -> new Pair<>(JCProfilerUtil.getHexStringBitCount(s), s))
-                        .sorted(Comparator.comparing(Pair::getKey))
-                        .map(Pair::getValue).collect(Collectors.toList());
-                inputs.addAll(hwsorted.subList(0, size / 2));
-                inputs.addAll(hwsorted.subList(hwsorted.size() - size / 2 - oddSize, hwsorted.size()));
-                break;
+                    int mid = size / 2;
+                    inputs.addAll(undividedInputs.subList(0, mid));
+                    inputs.addAll(undividedInputs.subList(undividedInputs.size() - mid - oddSize, undividedInputs.size()));
+                    break;
 
-            case none:
-                inputs.addAll(undividedInputs.subList(0, size));
-                break;
-            default:
-                throw new RuntimeException("Unreachable statement reached!");
+                case hammingWeight:
+                    final List<String> hwsorted = undividedInputs.stream()
+                            .map(s -> new Pair<>(JCProfilerUtil.getHexStringBitCount(s), s))
+                            .sorted(Comparator.comparing(Pair::getKey))
+                            .map(Pair::getValue).collect(Collectors.toList());
+                    inputs.addAll(hwsorted.subList(0, size / 2));
+                    inputs.addAll(hwsorted.subList(hwsorted.size() - size / 2 - oddSize, hwsorted.size()));
+                    break;
+                case none:
+                    break;
+                default:
+                    throw new RuntimeException("Unreachable statement reached!");
+            }
         }
 
         if (args.inputDivision != InputDivision.none)
@@ -304,8 +358,18 @@ public abstract class AbstractProfiler {
         if (round < 1 || inputs.size() < round)
             throw new ArrayIndexOutOfBoundsException("Unexpected index: " + round);
 
+        byte p1;
+        byte p2;
+        if (args.paramDataFile) {
+            p1 = p1Inputs.get(round - 1);
+            p2 = p2Inputs.get(round - 1);
+        } else {
+            p1 = args.p1;
+            p2 = args.p2;
+        }
+
         final byte[] arr = Util.hexStringToByteArray(inputs.get(round - 1));
-        return new CommandAPDU(args.cla, args.ins, args.p1, args.p2, arr);
+        return new CommandAPDU(args.cla, args.ins, p1, p2, arr);
     }
 
     /**

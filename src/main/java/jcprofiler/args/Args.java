@@ -140,6 +140,14 @@ public class Args {
                converter = FilePathConverter.class)
     public Path dataFile;
 
+    @Parameter(names = {"--order-data-file"},
+            description = "Use data samples in data file in given order and do not randomize the selection")
+    public boolean orderDataFile = false;
+
+    @Parameter(names = {"--param-data-file"},
+            description = "Read P1 and P2 parameters for APDU from the data-file; lines are in format: 'p1,p2,data'")
+    public boolean paramDataFile = false;
+
     @Parameter(names = {"--input-division"},
                description = "Divide generated inputs into two categories based on given characteristic",
                converter = InputDivisionConverter.class)

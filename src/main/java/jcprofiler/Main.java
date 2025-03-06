@@ -7,6 +7,7 @@ import com.beust.jcommander.JCommander;
 
 import jcprofiler.args.Args;
 import jcprofiler.util.JCProfilerUtil;
+import jcprofiler.util.enums.InputDivision;
 import jcprofiler.util.enums.Mode;
 import jcprofiler.util.enums.Stage;
 
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.jar.JarFile;
 
@@ -88,7 +90,7 @@ public class Main {
      * @param  args                          object with parsed commandline arguments
      * @throws UnsupportedOperationException if the argument validation failed
      */
-    private static void validateArgs(final Args args) {
+    private static void validateArgs(final Args args) throws IOException {
         // this is practically a noop but probably not a deliberate one
         if (args.startFrom.ordinal() > args.stopAfter.ordinal())
             throw new UnsupportedOperationException(String.format(
@@ -108,11 +110,9 @@ public class Main {
 
         // validate SPA time mode
         if (args.mode == Mode.spaTime) {
-            // --delimiter must be set
             if (args.delimiterFile == null)
                 throw new UnsupportedOperationException("Option --delimiter must be set to CSV file in spaTime mode!");
-            if (!(args.startFrom == Stage.instrumentation && args.stopAfter.ordinal() <= Stage.installation.ordinal()
-                    || args.startFrom == Stage.profiling)) {
+            if (args.startFrom.ordinal() <= Stage.installation.ordinal() && args.stopAfter.ordinal() >= Stage.profiling.ordinal()) {
                 throw new UnsupportedOperationException("Installation and profiling cannot be done together in spaTime mode!");
             }
         }
@@ -130,6 +130,24 @@ public class Main {
                     ((args.mode != Mode.memory && args.mode != Mode.stats) || args.executable != null))
                 throw new UnsupportedOperationException(
                         "Either --data-file or --data-regex options must be specified for the profiling stage!");
+        }
+        if (args.dataFile == null && args.orderDataFile) {
+            throw new UnsupportedOperationException(
+                    "Option --order-data-file must be specified with --data-file option simultaneously.");
+        } else if (args.dataFile != null && args.orderDataFile) {
+            long lineCount = Files.lines(args.dataFile).count();
+            if (lineCount != args.repeatCount) {
+                throw new UnsupportedOperationException(
+                        "For option --order-data-file the lines of data file must correspond to the repeat count.");
+            }
+        }
+        if (args.orderDataFile && args.inputDivision != InputDivision.none) {
+            throw new UnsupportedOperationException(
+                    "Option --order-data-file cannot be specified with --input-division option simultaneously.");
+        }
+        if (args.paramDataFile && args.inputDivision != InputDivision.none) {
+            throw new UnsupportedOperationException(
+                    "Option --param-data-file cannot be specified with --input-division option simultaneously.");
         }
 
         // validate compilation stage
