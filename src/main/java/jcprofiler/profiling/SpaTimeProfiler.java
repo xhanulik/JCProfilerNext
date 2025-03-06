@@ -39,8 +39,6 @@ public class SpaTimeProfiler extends AbstractProfiler {
     Path subtracesDirectory = null;
     int delimiterNum = trapNameMap.size();
 
-    int successfulExtractions = 0;
-
     private static final Logger log = LoggerFactory.getLogger(SpaTimeProfiler.class);
 
     AbstractOscilloscope oscilloscope;
@@ -64,6 +62,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
      */
     @Override
     protected void profileImpl() {
+        int unsuccessfulMeasurements = 0;
         try {
             // prepare target LEIA controller
             targetController.resetTriggerStrategy();
@@ -100,11 +99,9 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
                 // trace is stored for now in CSV parse trace for times
                 if (extractTimes(trace, round) != 0) {
-                    successfulExtractions += 1;
-                    // extraction failed, all measurements for given trigger APDU is null
-                    for (short trapID : trapNameMap.keySet()) {
-                        measurements.computeIfAbsent(getTrapName(trapID), k -> new ArrayList<>()).add(0L);
-                    }
+                    // extraction failed, do not add any value, otherwise creating bogus 0
+                    log.info("Measurements not saved");
+                    unsuccessfulMeasurements++;
                 }
             }
             // close connection to oscilloscope
@@ -118,6 +115,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
             throw new RuntimeException(e);
         }
 
+        log.info("Final number of measurements: {}", args.repeatCount - unsuccessfulMeasurements);
         log.info("Collecting measurements complete.");
     }
 
