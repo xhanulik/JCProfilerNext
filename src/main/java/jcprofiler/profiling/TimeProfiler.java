@@ -64,8 +64,7 @@ public class TimeProfiler extends AbstractProfiler {
                 generateAuxiliaryInputs();
             for (int round = 1; round <= args.repeatCount; round++) {
                 // run multiple APDU before measuring, if specified
-                if (args.multiApduFile != null)
-                    sendAuxiliaryInputs(round);
+                sendAuxiliaryInputs(round);
 
                 final CommandAPDU triggerAPDU = getInputAPDU(round);
                 final String input = Util.bytesToHex(triggerAPDU.getBytes());
