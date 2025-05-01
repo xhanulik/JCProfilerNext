@@ -15,6 +15,7 @@ import jcprofiler.profiling.similaritysearch.models.Trace;
 import jcprofiler.profiling.similaritysearch.Similarity;
 import jcprofiler.util.JCProfilerUtil;
 import org.apache.commons.csv.CSVPrinter;
+import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spoon.reflect.CtModel;
@@ -130,6 +131,16 @@ public class SpaTimeProfiler extends AbstractProfiler {
      * @throws RuntimeException if setting the next fatal performance trap failed
      */
     private Trace profileSingleStep(CommandAPDU triggerAPDU) throws CardException {
+        // send one more APDU with message for JCFROST profiling version
+        CommandAPDU preSign = new CommandAPDU(triggerAPDU.getCLA(), (byte) 0x04, triggerAPDU.getP1(), triggerAPDU.getP2(), triggerAPDU.getBytes());
+        log.info("APDU: {}", preSign);
+        ResponseAPDU preResponse = targetController.sendAPDU(preSign);
+        int SW = preResponse.getSW();
+        log.info("RESP: SW={}", String.format("%02X", preResponse.getSW1()) + String.format("%02X", preResponse.getSW2()));
+        if (SW != JCProfilerUtil.SW_NO_ERROR) {
+            throw new RuntimeException("Unexpected SW received when profiling: " + SW);
+        }
+
         // set pres-send APDU trigger strategy
         targetController.setPreSendAPDUTriggerStrategy();
 
@@ -138,7 +149,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
         // send profiled APDU to card
         ResponseAPDU response = targetController.sendAPDU(triggerAPDU);
-
+        log.info("RESPONSE: {}", Hex.toHexString(response.getData()));
         // stored measured data into CSV
         Trace trace;
         try {
@@ -148,7 +159,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
         }
 
         // test response from card
-        final int SW = response.getSW();
+        SW = response.getSW();
         if (SW != JCProfilerUtil.SW_NO_ERROR) {
             throw new RuntimeException("Unexpected SW received when profiling: " + SW);
         }
