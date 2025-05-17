@@ -49,6 +49,7 @@ The tool can be executed in four different modes (select with `--mode`):
 * `memory` -- Measure memory usage.
 * `time` (default) -- Measure elapsed time.
 * `stats` -- Collect API usage statistics.
+* `spaTime` -- Measure elapsed time via SPA.
 
 Time Example
 ~~~~~~~~~~~~
@@ -195,9 +196,38 @@ javacard.security,KeyPair,genKeyPair(),1
 javacard.security,KeyPair,"KeyPair(byte,short)",1
 ----
 
+SPA Time Example
+~~~~~~~~~~~~
+Consider the `example` method in the `Example` class in the Time Example section.  The outer loop is clearly
+not constant since its iteration count depends on the input value.  On the other
+hand, the inner loop is constant.
+
+Instrument, compile and install applet via card reader:
+[source,console]
+----
+$ ./gradlew run --args="--work-dir example --jckit jc222_kit --executable example --ins 0xEE --data-regex 00[0-9A-F]{2} --repeat-count 100 --mode spaTime --delimiter ./delimiter_path.csv"
+----
+JCProfilerNext will process all sources in the `example` directory and will
+also use this directory to store all intermediate results as by the original time profiling.
+
 Limitations
 -----------
 
 * Cards that require special communication procedures (e.g. `SecureChannel`) are not supported.
 * It is not possible to use a different JDK to compile the JavaCard applets and run this project.
 * Connection to wireless card terminals may occasionally fail.
+
+Licenses
+--------
+
+JCProfilerNext is licensed under the GNU General Public License v3.0 (GPLv3).
+This project includes components derived from the following third-party project:
+
+. SmartLEIA (https://github.com/cw-leia/smartleia)
+** License: BSD 3-Clause License
+. picosdk-java-examples (https://github.com/picotech/picosdk-java-examples)
+** License: ISC License
+. SPA-Cryptographic-Operations-Extractor (https://github.com/crocs-muni/SPA-Cryptographic-Operations-Extractor)
+** License: MIT License
+
+See `THIRD_PARTY_NOTICES.txt` and `LICENSES/` for full details.
