@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2017-2021 Petr Švenda <petrsgit@gmail.com>
 // SPDX-FileCopyrightText: 2022 Lukáš Zaoral <x456487@fi.muni.cz>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-only
 
 package jcprofiler.profiling;
@@ -99,7 +99,10 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
                 // trace is stored for now in CSV parse trace for times
                 if (extractTimes(trace, round) != 0) {
-                    // extraction failed, do not add any value, otherwise creating bogus 0
+                    // extraction failed, creating bogus 0
+                    for (short trapID : trapNameMap.keySet()) {
+                        measurements.computeIfAbsent(getTrapName(trapID), k -> new ArrayList<>()).add(0L);
+                    }
                     log.info("Measurements not saved");
                     unsuccessfulMeasurements++;
                 }
@@ -141,7 +144,7 @@ public class SpaTimeProfiler extends AbstractProfiler {
         try {
             trace = oscilloscope.getTrace(args.cutOffFrequency);
         } catch (Exception e) {
-            throw new RuntimeException("Storage of profiled data unsuccessfully!");
+            throw new RuntimeException("Storage of profiled data unsuccessful!");
         }
 
         // test response from card
@@ -199,16 +202,28 @@ public class SpaTimeProfiler extends AbstractProfiler {
                                 , similarity.getLastIndex())));
         Collections.sort(similaritiesBoundaries);
 
+        // create subtrace directory
+        if (args.traceDir != null) {
+            try {
+                Files.createDirectories(subtracesDirectory);
+            } catch (IOException e) {
+                log.error("Failed to create the directory for subtraces: " + e.getMessage());
+                return 1;
+            }
+        }
+
         // go over triples and extract times between them
         int numberOfSubtrace = 0; // for storing purposes
         measurements.computeIfAbsent(getTrapName(getTrapID(0)), k -> new ArrayList<>()).add(0L);
         log.debug("Computing times");
-        for (int delIndex = 0; delIndex < similaritiesBoundaries.size(); delIndex++) {
-            if (delIndex % args.delimiterPatternNum == 0 && delIndex != 0) {
-                // get time between this and previous triple
-                Boundaries startDelimiter = similaritiesBoundaries.get(delIndex - 1);
-                Boundaries endDelimiter = similaritiesBoundaries.get(delIndex);
-                long elapsedTime = endDelimiter.getLowerBoundNano() - startDelimiter.getUpperBoundNano();
+        for (int delIndex = 1; delIndex < similaritiesBoundaries.size(); delIndex++) {
+            // get time between this and previous delimiter
+            Boundaries startDelimiter = similaritiesBoundaries.get(delIndex - 1);
+            Boundaries endDelimiter = similaritiesBoundaries.get(delIndex);
+            long elapsedTime = (long) (endDelimiter.getLowerBound() - startDelimiter.getUpperBound());
+
+            // after full delimiter
+            if (delIndex % args.delimiterPatternNum == 0) {
                 numberOfSubtrace++;
 
                 // store time for given trapID
@@ -218,17 +233,19 @@ public class SpaTimeProfiler extends AbstractProfiler {
 
                 // save CSV for subtrace
                 if (args.traceDir != null) {
-                    try {
-                        Files.createDirectories(subtracesDirectory);
-                    } catch (IOException e) {
-                        System.out.println("Failed to create the directory: " + e.getMessage());
-                    }
                     // adjust main trace file name
                     Path currentSubtracePath = subtracesDirectory.resolve("trace_" + round + "_" + numberOfSubtrace + ".csv");
                     // save subtrace
                     DataManager.saveTrace(currentSubtracePath.toAbsolutePath().toString(),
                             operationTrace, startDelimiter.getLastIndex(), endDelimiter.getFirstIndex());
                     log.debug("Subtrace {} saved.", currentSubtracePath.getFileName());
+                }
+            } else {
+                log.debug("Time in-between delimiter patterns: {} ns", elapsedTime);
+                if (args.patternDistance >= 0 && elapsedTime > args.patternDistance) {
+                    log.error("Unexpected time between delimiter patterns (expected max {}, found {})", args.patternDistance, elapsedTime);
+                    log.error("Skipping trace");
+                    return 1;
                 }
             }
         }

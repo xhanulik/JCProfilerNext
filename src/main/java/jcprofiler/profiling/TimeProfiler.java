@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2017-2021 Petr Švenda <petrsgit@gmail.com>
 // SPDX-FileCopyrightText: 2022-2024 Lukáš Zaoral <lukaszaoral@outlook.com>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-only
 
 package jcprofiler.profiling;

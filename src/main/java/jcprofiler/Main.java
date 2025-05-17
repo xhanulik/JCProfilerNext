@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2022-2024 Lukáš Zaoral <lukaszaoral@outlook.com>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-only
 
 package jcprofiler;
@@ -115,6 +116,9 @@ public class Main {
             if (args.startFrom.ordinal() <= Stage.installation.ordinal() && args.stopAfter.ordinal() >= Stage.profiling.ordinal()) {
                 throw new UnsupportedOperationException("Installation and profiling cannot be done together in spaTime mode!");
             }
+            if (args.patternDistance < -1) {
+                throw new UnsupportedOperationException("Invalid value of distance for delimiter patterns!");
+            }
         }
 
         // validate --data-regex and --data-file
@@ -131,15 +135,16 @@ public class Main {
                 throw new UnsupportedOperationException(
                         "Either --data-file or --data-regex options must be specified for the profiling stage!");
         }
+        // validate data file ordering extension
         if (args.dataFile == null && args.orderDataFile) {
             throw new UnsupportedOperationException(
                     "Option --order-data-file must be specified with --data-file option simultaneously.");
         } else if (args.dataFile != null && args.orderDataFile) {
             long lineCount = Files.lines(args.dataFile).count();
-            if (lineCount != args.repeatCount) {
-                throw new UnsupportedOperationException(
-                        "For option --order-data-file the lines of data file must correspond to the repeat count.");
-            }
+//            if (lineCount != args.repeatCount) {
+//                throw new UnsupportedOperationException(
+//                        "For option --order-data-file the lines of data file must correspond to the repeat count.");
+//            }
         }
         if (args.orderDataFile && args.inputDivision != InputDivision.none) {
             throw new UnsupportedOperationException(

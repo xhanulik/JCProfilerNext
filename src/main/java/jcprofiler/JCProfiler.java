@@ -94,7 +94,6 @@ public class JCProfiler {
         if (args.startFrom.ordinal() <= Stage.profiling.ordinal()) {
             // Connect if the installation was skipped or simulator is used
             if (cardManager == null && args.mode != Mode.spaTime) {
-                // TODO: move connection stuff to a separate class?
                 cardManager = Installer.connect(args, entryPoint);
              } else if (args.mode == Mode.spaTime) {
                 // Only for direct access through LEIA board driver (not for applet installation)

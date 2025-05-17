@@ -5,15 +5,12 @@ package jcprofiler.args;
 
 import com.beust.jcommander.Parameter;
 
-import com.beust.jcommander.converters.BooleanConverter;
 import com.beust.jcommander.converters.DoubleConverter;
 import com.beust.jcommander.converters.IntegerConverter;
 import jcprofiler.args.converters.*;
 import jcprofiler.args.validators.*;
 import jcprofiler.util.enums.*;
 
-import org.apache.commons.beanutils.converters.ShortConverter;
-import org.apache.logging.log4j.core.config.plugins.convert.TypeConverters;
 import pro.javacard.JavaCardSDK;
 
 import java.nio.file.Path;
@@ -189,14 +186,14 @@ public class Args {
     public int delay = 0;
 
     @Parameter(names = {"--auto-trigger"},
-            description = "After how many milliseconds should the trigger be setup automatically",
+            description = "After how many milliseconds should the trigger be set up automatically",
             converter = IntegerConverter.class)
     public int autoTrigger = 5000;
 
     @Parameter(names = {"--time-interval"},
             description = "Time interval between samples in nanoseconds",
             converter = IntegerConverter.class)
-    public int timeInterval = 250;
+    public int timeInterval = 100;
 
     @Parameter(names = {"--samples"},
             description = "How many samples should be collected for SPA mode",
@@ -206,5 +203,10 @@ public class Args {
     @Parameter(names = {"--filter"},
             description = "Apply low pass filter of given frequency (Hz)",
             converter = IntegerConverter.class)
-    public int cutOffFrequency = 0;
+    public int cutOffFrequency = 10000;
+
+    @Parameter(names = {"--delimiter-distance"},
+            description = "Maximal time value in-between particular delimiter patterns in nanoseconds",
+            converter = IntegerConverter.class)
+    public int patternDistance = -1;
 }
