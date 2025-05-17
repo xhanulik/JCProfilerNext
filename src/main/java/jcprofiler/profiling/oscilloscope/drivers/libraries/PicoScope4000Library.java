@@ -1,6 +1,19 @@
+// SPDX-FileCopyrightText: 2011-2018 Pico Technology Ltd. <support@picotech.com>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-License-Identifier: ISC
+
 /**
- * https://github.com/picotech/picosdk-java-examples
- * Copyright © 2011-2018 Pico Technology Ltd.
+ * This file includes code derived from the picosdk-java-examples project,
+ * originally authored by HSM at Pico Technology Ltd. (https://github.com/picotech/picosdk-java-examples),
+ * and licensed under the ISC License.
+ *
+ * Original code licensed under the ISC license:
+ * Copyright (c) 2011-2018, HSM, Pico Technology Ltd.
+ * See LICENSES/ISC.txt and THIRD_PARTY_NOTICES.txt for details.
+ *
+ * This file is distributed as part of a larger project (JCProfilerNext),
+ * which is licensed under the GNU General Public License v3.0.
+ * See LICENSE.txt for full licensing information.
  */
 
 package jcprofiler.profiling.oscilloscope.drivers.libraries;
@@ -63,14 +76,14 @@ public interface PicoScope4000Library extends Library {
 
     enum PicoScope4000ThresholdDirection
     {
-        ABOVE, //using upper threshold
+        ABOVE,
         BELOW,
-        RISING, // using upper threshold
-        FALLING, // using upper threshold
-        RISING_OR_FALLING, // using both threshold
-        ABOVE_LOWER, // using lower threshold
-        BELOW_LOWER, // using lower threshold
-        RISING_LOWER,       // using lower threshold
-        FALLING_LOWER,     // using lower threshold
+        RISING,
+        FALLING,
+        RISING_OR_FALLING,
+        ABOVE_LOWER,
+        BELOW_LOWER,
+        RISING_LOWER,
+        FALLING_LOWER,
     }
 }
