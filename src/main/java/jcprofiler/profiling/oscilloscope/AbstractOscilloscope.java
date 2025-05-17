@@ -1,15 +1,14 @@
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-only
+
 package jcprofiler.profiling.oscilloscope;
 
 import jcprofiler.args.Args;
 import jcprofiler.profiling.oscilloscope.drivers.PicoScope4000Driver;
-import jcprofiler.profiling.oscilloscope.drivers.PicoScope6000Driver;
 import jcprofiler.profiling.similaritysearch.models.Trace;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
 
 public abstract class AbstractOscilloscope {
     protected int PICO_VARIANT_INFO = 3;
@@ -28,8 +27,7 @@ public abstract class AbstractOscilloscope {
      * Array of implemented oscilloscope drivers
      */
     static Class<?>[] oscilloscopeDrivers = {
-            PicoScope4000Driver.class,
-            PicoScope6000Driver.class
+            PicoScope4000Driver.class
     };
 
     public AbstractOscilloscope(Args args) {
@@ -80,12 +78,12 @@ public abstract class AbstractOscilloscope {
 
         double[] timeValues = new double[sampleNumber];
         for (int i = 0; i < sampleNumber; i++) {
-            timeValues[i] = (i * timeInterval) / 1e6;
+            timeValues[i] = (i * timeInterval);// / 1e6;
             if (filter != null)
                 voltValues[i] = filter.applyLowPassFilter(voltValues[i]);
         }
 
-        return new Trace("V", "ms", sampleNumber, voltValues, timeValues);
+        return new Trace("V", "ns", sampleNumber, voltValues, timeValues);
     }
 
     /**
