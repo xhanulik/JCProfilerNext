@@ -1,36 +1,35 @@
+// SPDX-FileCopyrightText: 2019 Martin Podhora (martinftlsx)
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-License-Identifier: MIT
+
 /**
- * MIT License
+ * This file is copied from the SPA-Cryptographic-Operations-Extractor,
+ * originally developed by Martin Podhora (https://github.com/crocs-muni/SPA-Cryptographic-Operations-Extractor),
+ * and licensed under MIT license.
  *
+ * Original code licensed under the MIT License:
  * Copyright (c) 2019 martinftlsx
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Modifications:
+ * Copyright (c) 2025 Veronika Hanulíková
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * Licensed under the MIT License.
+ * See LICENSES/MIT.txt and THIRD_PARTY_NOTICES.txt for details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * This file is distributed as part of a larger project (JCProfilerNext),
+ * which is licensed under the GNU General Public License v3.0.
+ * See LICENSE.txt for full licensing information.
  */
 
 package jcprofiler.profiling.similaritysearch;
 
 import jcprofiler.profiling.similaritysearch.distancemeasure.DistanceMeasure;
 import jcprofiler.profiling.similaritysearch.distancemeasure.ManhattanDistance;
-import jcprofiler.profiling.similaritysearch.filters.LowPassFilter;
 import jcprofiler.profiling.similaritysearch.models.Trace;
 import jcprofiler.profiling.similaritysearch.multithread.MultiThreadController;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.SortedSet;
 
 /**
@@ -38,8 +37,7 @@ import java.util.SortedSet;
  * @author Martin Podhora
  */
 public class SimilaritySearchController {
-    public static final int CUTOFF_FREQUENCY = 10000;
-    public static final int JUMPING_DISTANCE = 10;
+    public static final int JUMPING_DISTANCE = 5;
     private static final float TOLERATED_SAMPLING_RATIO_UPPER_BOUND = 1.05f;
     private static final float TOLERATED_SAMPLING_RATIO_LOWER_BOUND = 0.95f;
     private static final double TOLERATED_Y_AXIS_DIFFERENCE_UPPER_BOUND = 5;
@@ -73,7 +71,6 @@ public class SimilaritySearchController {
         int toAdd = Math.round(operation.getDataCount() * toAddRatio);
         double[] operationVoltage = new double[toAdd];
         int previousDataCounter = 0;
-        //Adding first because assignement in for cycle needs first element to be added
         operationVoltage[0] = operation.getVoltageOnPosition(0);
         int added = 1;
         float addedRatio = 1f;
@@ -108,13 +105,17 @@ public class SimilaritySearchController {
             return addToOperation(traceToOperationRatio, operation);
         return operation;
     }
-    
-    private static Trace applyFilterMakeCopy(Trace trace, int cutoffFrequency) {
-        LowPassFilter lowPassFilter = new LowPassFilter(trace.getSamplingFrequency(), cutoffFrequency);
-        Trace traceCopy = lowPassFilter.applyLowPassFilterMakeCopy(trace);
+
+    /**
+     * Create copy of the trace
+     * @param trace input trace
+     * @return copy of the input trace
+     */
+     private static Trace makeCopy(Trace trace) {
+         Trace traceCopy = new Trace(trace.getVoltageUnit(), trace.getTimeUnit(), trace.getDataCount(), Arrays.copyOf(trace.getVoltage(), trace.getDataCount()), null, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
         return traceCopy;
     }
-    
+
     private static void moveAlongYAxis(Trace trace, Trace operation) {
         double distance = trace.getMaximalVoltage() - operation.getMaximalVoltage();
         if (distance < TOLERATED_Y_AXIS_DIFFERENCE_UPPER_BOUND && distance > TOLERATED_Y_AXIS_DIFFERENCE_LOWER_BOUND) 
@@ -140,8 +141,9 @@ public class SimilaritySearchController {
     }
     
     public static SortedSet<Similarity> searchTraceForOperation(Trace trace, Trace operation, DistanceMeasure distanceAlgorithm, int TopNStrategyCount) throws InterruptedException {
-        Trace traceCopy = applyFilterMakeCopy(trace, CUTOFF_FREQUENCY);
-        Trace operationCopy = applyFilterMakeCopy(operation, CUTOFF_FREQUENCY);
+
+        Trace traceCopy = makeCopy(trace);
+        Trace operationCopy = makeCopy(operation);
 
         Trace modifiedOperation = adjustSamplingFrequency(traceCopy, trace.getSamplingFrequency(), operationCopy, operation.getSamplingFrequency());
        
