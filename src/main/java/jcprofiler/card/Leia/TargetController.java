@@ -1,6 +1,25 @@
+// SPDX-FileCopyrightText: 2019 The LEIA Team <leia@ssi.gouv.fr>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-License-Identifier: BSD-3-Clause
+
 /**
- * Code Copyright (c) 2024, Veronika Hanulikova <xhanulik@gmail.com>
- * Python driver for the LEIA Smart Reader (https://github.com/cw-leia/smartleia) Copyright (c) 2019, The LEIA Team <leia@ssi.gouv.fr>
+ * This file is a derivative work based on code from the SmartLEIA project,
+ * originally developed by the LEIA Team (https://github.com/cw-leia/smartleia),
+ * and licensed under the BSD 3-Clause License.
+ *
+ * Original code licensed under the BSD 3-Clause License:
+ * Copyright (c) 2019, The LEIA Team <leia@ssi.gouv.fr>
+ *
+ * Modifications and translation:
+ * Copyright (c) 2025 Veronika Hanulíková
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted under the terms of the BSD 3-Clause License.
+ * See LICENSES/BSD-3-Clause.txt and THIRD_PARTY_NOTICES.txt for details.
+ *
+ * This file is distributed as part of a larger project (JCProfilerNext),
+ * which is licensed under the GNU General Public License v3.0.
+ * See LICENSE.txt for full licensing information.
  */
 
 package jcprofiler.card.Leia;
@@ -13,16 +32,19 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class TargetController {
+    /* Number of bytes for size definition */
     final int RESPONSE_LEN_SIZE = 4;
     final int COMMAND_LEN_SIZE = 4;
+    /* Serial connection */
     private SerialPort serialPort = null;
     private final int USB_VID = 0x3483;
     private final int USB_PID = 0x0BB9;
-
+    /* Object for simple synchronization */
     private final Object lock = new Object();
 
     /**
-     * Try to detect connected Leia card reader and open serial port for communication.
+     * Try to detect connected LEIA board and open serial port for communication.
+     * @implNote: LEIA.open, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     public boolean open() {
         SerialPort[] availablePorts = SerialPort.getCommPorts();
@@ -36,7 +58,7 @@ public class TargetController {
         }
 
         if (count > 2 || count == 0) {
-            // Do not throw exception, so we can call it in loop
+            // Do not throw exception, so it can call it in loop
             return false;
         }
 
@@ -62,7 +84,7 @@ public class TargetController {
             }
         }
 
-        // read all bytes from port
+        // Read all leftover bytes from port
         readAvailableBytes();
         testWaitingFlag();
         return true;
@@ -87,7 +109,7 @@ public class TargetController {
         int availableBytes = serialPort.bytesAvailable();
         byte[] buffer = new byte[availableBytes];  // Create a buffer with an appropriate size
 
-        // 'while' cycle might be needed in future
+        // TODO: 'while' cycle might be needed in future
         if (serialPort.bytesAvailable() > 0) {
             serialPort.readBytes(buffer, availableBytes, 0);
         }
@@ -107,15 +129,16 @@ public class TargetController {
     }
 
     /**
-     *  Verify the presence of the waiting flag.
+     * Verify the presence of the waiting flag.
+     * @implNote: LEIA._testWaitingFlag, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     private void testWaitingFlag() {
         isValidPort();
-        readAvailableBytes(); // empty read buffer
+        readAvailableBytes(); // Empty read buffer
 
         byte[] command = new byte[] { ' ' }; // b" "
         serialPort.writeBytes(command, command.length, 0);
-        wait(100); // wait for 0.1s
+        wait(100); // Wait for 0.1s
 
         // Read 1 + all available bytes
         byte[] singleByte = new byte[1];
@@ -124,7 +147,7 @@ public class TargetController {
         if (bytesRead == 0 && allBytes.length == 0)
             throw new RuntimeException();
 
-        // combine
+        // Combine
         byte[] buffer = new byte[1 + allBytes.length];
         buffer[0] = singleByte[0];
         System.arraycopy(allBytes, 0, buffer, 1, allBytes.length);
@@ -136,6 +159,7 @@ public class TargetController {
 
     /**
      * Verify the presence of the status flag.
+     * @implNote: LEIA._checkStatus, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     private void checkStatus() {
         isValidPort();
@@ -143,31 +167,32 @@ public class TargetController {
         int readBytes = serialPort.readBytes(status, status.length);
 
         if (readBytes == 0)
-            throw new RuntimeException("No status flag received.");
+            System.out.println("No status flag received.");
 
         while(status[0] == 'w') {
             // reading wait extension flag, try to read again
             readBytes = serialPort.readBytes(status, status.length);
             if (readBytes == 0)
-                throw new RuntimeException("No status flag received.");
+                System.out.println("No status flag received.");
         }
 
         if (status[0] == 'U')
-            throw new RuntimeException("LEIA firmware do not handle this command.");
+            System.out.println("LEIA firmware do not handle this command.");
         else if (status[0] == 'E')
-            throw new RuntimeException("Unknown error (E).");
+            System.out.println("Unknown error (E).");
         else if (status[0] != 'S')
-            throw new RuntimeException("Invalid status flag '{s}' received.");
+            System.out.println("Invalid status flag '{s}' received.");
 
         readBytes = serialPort.readBytes(status, status.length);
         if (readBytes == 0)
-            throw new RuntimeException("Status not received.");
+            System.out.println("Status not received.");
         else if (status[0] != 0x00)
-            throw new RuntimeException("Error status!");
+            System.out.println("Error status!");
     }
 
     /**
      * Verify the presence of acknowledge flag.
+     * @implNote: LEIA.checkAck, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     private void checkAck() {
         isValidPort();
@@ -181,21 +206,22 @@ public class TargetController {
      * Send command to board
      * @param command command in bytes
      * @param struct data to be sent
+     * @implNote: LEIA._send_command, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     private void sendCommand(byte[] command, DataStructure struct) {
         isValidPort();
         testWaitingFlag();
-        // Send command first
+        // Send command byte
         serialPort.writeBytes(command, command.length, 0);
 
         if (struct == null) {
-            // send simple byte command filled with zeroes aligned to command len size
-            byte[] zeroCommand = new byte[COMMAND_LEN_SIZE]; // BigEndian
+            // Send simple byte command filled with zeroes aligned to command len size
+            byte[] zeroCommand = new byte[COMMAND_LEN_SIZE];
             serialPort.writeBytes(zeroCommand, zeroCommand.length, 0);
         } else {
-            // pack structure into byte array
+            // Pack structure into byte array
             byte[] packedData = struct.pack();
-            // wrap packed size into 4 bytes
+            // Wrap packed size into 4 bytes
             byte[] size = ByteBuffer.allocate(COMMAND_LEN_SIZE).putInt(packedData.length).array();
             serialPort.writeBytes(size, size.length, 0);
             serialPort.writeBytes(packedData, packedData.length, 0);
@@ -206,8 +232,8 @@ public class TargetController {
 
     /**
      * Read response size after sending a command
-     * @return response size
-     * @implNote response size is LittleEndian!
+     * @return response size in little endian
+     * @implNote: LEIA._read_response_size, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     private int readResponseSize() {
         isValidPort();
@@ -215,14 +241,13 @@ public class TargetController {
         int readBytes = serialPort.readBytes(response, RESPONSE_LEN_SIZE);
         if (readBytes != RESPONSE_LEN_SIZE)
             throw new RuntimeException("Unexpected bytes for response size! " + readBytes);
-        // Omit creation of response size struct as in python
         return ByteBuffer.wrap(response).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
     /**
-     * test whether the card is inserted to the board
-     * @return True if card is inserted, false otherise
-     * @implNote command ID: "?"
+     * Test whether the card is inserted to the board
+     * @return True if card is inserted, false otherwise
+     * @implNote: LEIA.is_card_inserted, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     public boolean isCardInserted() {
         isValidPort();
@@ -240,13 +265,13 @@ public class TargetController {
     }
 
     /**
-     * Configure connected smartcard reader, simplified support.
+     * Configure connected smart card reader, simplified support.
      * @param protocolToUse value of ConfigureSmartcardCommand.T, no support for automatic choice
      * @param ETUToUse 0 for letting the reader negotiate ETU
      * @param freqToUse 0 for letting the reader negotiate frequency
      * @param negotiatePts true if yes, false otherwise
      * @param negotiateBaudrate true if yes, false otherwise
-     * @implNote command ID: "c" + LEIA structure
+     * @implNote: LEIA.configure_smartcard, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     public void configureSmartcard(ConfigureSmartcardCommand.T protocolToUse, int ETUToUse, int freqToUse, boolean negotiatePts, boolean negotiateBaudrate) {
         isValidPort();
@@ -255,7 +280,7 @@ public class TargetController {
         synchronized (lock) {
             testWaitingFlag();
 
-            // simplified scenario - no support for automatic choice
+            // No support for automatic choice in this simplified scenario
             if (protocolToUse == null) {
                 protocolToUse = ConfigureSmartcardCommand.T.T1;
             }
@@ -270,8 +295,8 @@ public class TargetController {
     }
 
     /**
-     * Fill the ATR object with information received from board
-     * @implNote command ID: "t"
+     * Get ATR from card
+     * @implNote: LEIA.get_ATR, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     public ATR getATR() {
         isValidPort();
@@ -289,9 +314,8 @@ public class TargetController {
     }
 
     /**
-     * Simplified set_trigger_strategy routine for resetting all trigger strategies to none
-     * @implNote target.set_trigger_strategy(1, point_list=[], delay=0)
-     * @implNote command ID: "O" + trigger strategy struct
+     * Reset all trigger strategies to none
+     * @implNote: LEIA.set_trigger_strategy(1, point_list=[], delay=0), originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     public void resetTriggerStrategy() {
         isValidPort();
@@ -302,9 +326,9 @@ public class TargetController {
     }
 
     /**
-     * Simplified set_trigger_strategy routine for setting only pre-send APDu strategy
-     * @implNote target.set_trigger_strategy(1, point_list=[TriggerPoints.TRIG_PRE_SEND_APDU], delay=0)
-     * @implNote command ID: "O" + trigger strategy struct
+     * Set pre-send APDU strategy
+     * @implNote: LEIA.set_trigger_strategy(1, point_list=[TriggerPoints.TRIG_PRE_SEND_APDU], delay=0), originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
+
      */
     public void setPreSendAPDUTriggerStrategy() {
         isValidPort();
@@ -315,16 +339,16 @@ public class TargetController {
     }
 
     /**
-     * Send APDU to card connected in Leia car reader
+     * Send APDU to card in LEIA board
      * @param commandApdu APDU to send
-     * @return filled ResponseAPDU structure
+     * @return ResponseAPDU structure with car response
+     * @implNote: LEIA.send_APDU, originally implemented in https://github.com/cw-leia/smartleia/blob/master/smartleia/__init__.py
      */
     public ResponseAPDU sendAPDU(CommandAPDU commandApdu) {
         isValidPort();
         APDU apdu = new APDU((byte) commandApdu.getCLA(), (byte) commandApdu.getINS(), (byte) commandApdu.getP1(),
                 (byte) commandApdu.getP2(), commandApdu.getData());
-        RESP response = new RESP(); //  for unpacking the answer data
-        ResponseAPDU responseApdu; // for return
+        ResponseAPDU responseApdu;
         synchronized (lock) {
             sendCommand("a".getBytes(), apdu);
             int resSize = this.readResponseSize();
@@ -332,9 +356,8 @@ public class TargetController {
                 throw new RuntimeException("Unexpected response size! Cannot parse ATR.");
             byte[] responseBytes = new byte[resSize];
             serialPort.readBytes(responseBytes, resSize);
+            RESP response = new RESP();
             response.unpack(responseBytes);
-
-            // convert into ResponseAPDU
             responseApdu = new ResponseAPDU(response.toArray());
         }
         return responseApdu;
