@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019 Martin Podhora (martinftlsx)
-// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-FileCopyrightText: 2025-2026 Veronika Hanulikova <xhanulik@gmail.com>
 // SPDX-License-Identifier: MIT
 
 /**
@@ -11,7 +11,7 @@
  * Copyright (c) 2019 martinftlsx
  *
  * Modifications:
- * Copyright (c) 2025 Veronika Hanulíková
+ * Copyright (c) 2025 Veronika Hanulikova
  *
  * Licensed under the MIT License.
  * See LICENSES/MIT.txt and THIRD_PARTY_NOTICES.txt for details.

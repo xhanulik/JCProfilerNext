@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2022-2026 Lukáš Zaoral <lukaszaoral@outlook.com>
-// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-FileCopyrightText: 2025-2026 Veronika Hanulíková <xhanulik@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-only
 
 package jcprofiler.installation;
@@ -141,7 +141,7 @@ public class Installer {
     private static CardManager configureSimulator(final Args args, final CtClass<?> entryPoint) {
         log.info("Configuring jCardSim simulator.");
 
-        // assure jCardSim compatibility with newer bouncycastle
+        // assure jCardsSim compatibility with newer bouncycastle
         System.setProperty("com.licel.jcardsim.bouncycastle.rsa.allow_unsafe_mod", "true");
 
         // get path to JAR archive

@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2011-2018 Pico Technology Ltd. <support@picotech.com>
-// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulikova <xhanulik@gmail.com>
 // SPDX-License-Identifier: ISC
 
 /**

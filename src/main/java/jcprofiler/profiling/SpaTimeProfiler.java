@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2022 Lukáš Zaoral <x456487@fi.muni.cz>
-// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-FileCopyrightText: 2025 Veronika Hanulikova <xhanulik@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-only
 
 package jcprofiler.profiling;
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * This class represents the specifics of profiling in SPA time mode.
  *
- * @author Veronika Hanulíková
+ * @author Veronika Hanulikova
  */
 public class SpaTimeProfiler extends AbstractProfiler {
     // use LinkedHashX to preserve insertion order

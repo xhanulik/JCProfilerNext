@@ -239,6 +239,6 @@ This is a modified version of JCProfilerNext, which is licensed under the GNU Ge
 
 Original project URL: https://github.com/lzaoral/JCProfilerNext
 
-Modifications have been made by Veronika Hanulíková as part of a Master's Thesis at Masaryk University in 2025.
+Modifications have been made by Veronika Hanulikova as part of a Master's Thesis at Masaryk University in 2025.
 
 All modified files contain notices of the changes.

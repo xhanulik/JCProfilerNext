@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019 The LEIA Team <leia@ssi.gouv.fr>
-// SPDX-FileCopyrightText: 2025 Veronika Hanulíková <xhanulik@gmail.com>
+// SPDX-FileCopyrightText: 2025-2026 Veronika Hanulikova <xhanulik@gmail.com>
 // SPDX-License-Identifier: BSD-3-Clause
 
 /**
@@ -11,7 +11,7 @@
  * Copyright (c) 2019, The LEIA Team <leia@ssi.gouv.fr>
  *
  * Modifications and translation:
- * Copyright (c) 2025 Veronika Hanulíková
+ * Copyright (c) 2025 Veronika Hanulikova
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted under the terms of the BSD 3-Clause License.
