@@ -74,4 +74,8 @@ public class DataManager {
     public static void saveTrace(String filePath, Trace trace, int firstIndex, int lastIndex) throws IOException {
         DataSaver.exportToCsv(trace, filePath, firstIndex, lastIndex);
     }
+
+    public static void saveTrace(String filePath, Trace trace) throws IOException {
+        DataSaver.exportToCsv(trace, filePath, 0, trace.getLength());
+    }
 }

@@ -213,4 +213,8 @@ public class Trace {
     public double getMinimalVoltage() {
         return voltageMinimum;
     }
+
+    public int getLength() {
+        return this.timeArray.length;
+    }
 }

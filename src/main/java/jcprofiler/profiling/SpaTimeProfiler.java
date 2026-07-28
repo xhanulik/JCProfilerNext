@@ -9,6 +9,7 @@ import jcprofiler.args.Args;
 import jcprofiler.card.LeiaTarget;
 import jcprofiler.profiling.oscilloscope.AbstractOscilloscope;
 import jcprofiler.profiling.similaritySearch.SimilaritySearchController;
+import jcprofiler.profiling.similaritySearch.cotemplatefinder.RepeatingPatternFinder;
 import jcprofiler.profiling.similaritySearch.dataprocessing.DataManager;
 import jcprofiler.profiling.similaritySearch.models.Boundaries;
 import jcprofiler.profiling.similaritySearch.models.Trace;
@@ -81,9 +82,28 @@ public class SpaTimeProfiler extends AbstractProfiler {
             // generate profiling inputs
             generateInputs(args.repeatCount);
 
-            // load delimiter trace
-            delimiterTrace = DataManager.loadTrace(args.delimiterFile.toAbsolutePath().toString(), true);
-
+            // obtain delimiter trace
+            if (args.delimiterFile != null) {
+                delimiterTrace = DataManager.loadTrace(args.delimiterFile.toAbsolutePath().toString(), true);
+            } else {
+                // automatic calibration
+                target.getTargetController().setPreSendAPDUTriggerStrategy();
+                oscilloscope.startMeasuring();
+                CommandAPDU delimAPDU =  getInputAPDU(1); // Use first APDU input for calibration
+                ResponseAPDU response = target.getTargetController().sendAPDU(delimAPDU);
+                Trace trace = oscilloscope.getTrace(args.cutOffFrequency);
+                // the calibration trace contains delimiterNum * delimiterPatternNum
+                // back-to-back repeats of the base delimiter pattern (one full set of trap
+                // delimiters); only the very first repeat is extracted as the reference template
+                int totalPatternCount = delimiterNum * args.delimiterPatternNum;
+                delimiterTrace = RepeatingPatternFinder.extractOneOccurrence(trace, totalPatternCount);
+                if (args.traceDir != null) {
+                    Path delimiterPath = args.traceDir.resolve("delimiter.csv");
+                    DataManager.saveTrace(delimiterPath.toAbsolutePath().toString(), delimiterTrace);
+                    log.debug("Delimiter {} saved.", delimiterPath.getFileName());
+                }
+            }
+            
             for (int round = 1; round <= args.repeatCount; round++) {
                 // run multiple APDU before measuring, if specified
                 target.getTargetController().resetTriggerStrategy();
