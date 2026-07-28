@@ -28,7 +28,6 @@ import jcprofiler.profiling.similaritySearch.distancemeasure.ManhattanDistance;
 import jcprofiler.profiling.similaritySearch.models.Trace;
 import jcprofiler.profiling.similaritySearch.multithread.MultiThreadController;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.SortedSet;
 
@@ -43,7 +42,6 @@ public class SimilaritySearchController {
     private static final double TOLERATED_Y_AXIS_DIFFERENCE_UPPER_BOUND = 5;
     private static final double TOLERATED_Y_AXIS_DIFFERENCE_LOWER_BOUND = -5;
     public static final ManhattanDistance MANHATTAN_DISTANCE_ALGORITHM = new ManhattanDistance();
-    public static final int distanceDifference = 10;
 
     private static Trace removeFromOperation(float toRetainRatio, Trace operation) {
         int retained = 0;
@@ -125,21 +123,6 @@ public class SimilaritySearchController {
         }
     }
 
-    private static SortedSet<Similarity> filterOutSimilarities(SortedSet<Similarity> similarities) {
-        double maxDistance = similarities.first().getDistance();
-        ArrayList<Similarity> toRemove = new ArrayList<>();
-        for (Similarity similarity : similarities) {
-            if (similarity.getDistance() >  distanceDifference + maxDistance) {
-                toRemove.add(similarity);
-            } else {
-                maxDistance = similarity.getDistance();
-            }
-        }
-        for (Similarity similarity : toRemove)
-            similarities.remove(similarity);
-        return similarities;
-    }
-
     public static SortedSet<Similarity> searchTraceForOperation(Trace trace, Trace operation, DistanceMeasure distanceAlgorithm, int TopNStrategyCount) throws InterruptedException {
 
         Trace traceCopy = makeCopy(trace);
@@ -149,7 +132,16 @@ public class SimilaritySearchController {
 
         //moveAlongYAxis(traceOperationCopies.getKey(), traceOperationCopies.getValue()); Needed functionality? What options do I have? According to max, min, 0 or other constant. Move trace or operation?
 
-        SortedSet<Similarity> similarities = MultiThreadController.searchForSimilarities(traceCopy, modifiedOperation, distanceAlgorithm, TopNStrategyCount);
-        return filterOutSimilarities(similarities);
+        // NOTE: this used to post-filter the top-N result with a chain-based outlier rejection
+        // (drop any candidate whose distance jumped more than a fixed constant beyond the
+        // previously accepted one). That logic freezes permanently after the first rejection -
+        // since the best match is often an exact (distance 0) duplicate when the operation was
+        // cut directly from this same trace, the very next, perfectly legitimate match already
+        // exceeds the fixed jump threshold, which then rejects every remaining candidate too.
+        // TopNStrategy already selects the best TopNStrategyCount non-overlapping candidates by
+        // construction, and the caller (SpaTimeProfiler.extractTimes) already validates the
+        // result count explicitly, so this redundant, bug-prone filtering step was removed
+        // rather than reworked into another fixed-constant heuristic.
+        return MultiThreadController.searchForSimilarities(traceCopy, modifiedOperation, distanceAlgorithm, TopNStrategyCount);
     }
 }
