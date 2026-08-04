@@ -803,14 +803,17 @@
             "name": "SmartPGP-applet",
             "repo": "https://github.com/ANSSI-FR/SmartPGP",
             "path": "src",
-            "jckit": "304",
-            "subtests": []
+            "jckit": "310r20210706",
+            "failure": {
+                "stopAfter": "compilation",
+                "reason": "Installation: CryptoException.NO_SUCH_ALGORITHM"
+            }
         },
         {
             "name": "SmartPGP-test_applet",
             "repo": "https://github.com/ANSSI-FR/SmartPGP",
             "path": "test_applet/src",
-            "jckit": "304",
+            "jckit": "310r20210706",
             "subtests": []
         },
         {
