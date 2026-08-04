@@ -183,7 +183,7 @@ public class Instrumenter {
             throw new UnsupportedOperationException("Usage of the default package detected! " +
                     "This is unsupported by the CAP converter.");
 
-        // Only JavaCard 3.0.1 and newer support multi package CAP files.
+        // Only JavaCard 3.1.0 and newer support multi package CAP files.
         // https://docs.oracle.com/en/java/javacard/3.1/guide/programming-multi-package-large-cap-files.html
         if (pkgs.size() != 1) {
             final JavaCardSDK.Version jcVersion = args.jcSDK.getVersion();
