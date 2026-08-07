@@ -4,6 +4,7 @@
 package jcprofiler.visualisation;
 
 import jcprofiler.args.Args;
+import jcprofiler.args.converters.ModeConverter;
 import jcprofiler.util.JCProfilerUtil;
 import jcprofiler.util.enums.InputDivision;
 import jcprofiler.util.enums.Mode;
@@ -154,7 +155,11 @@ public abstract class AbstractVisualiser {
 
             // parse header
             final List<String> header = it.next().toList();
-            mode = Mode.valueOf(header.get(0));
+            // Mode.valueOf() expects the raw enum constant name (e.g. "spa_time"), but the CSV
+            // header stores Mode's hyphenated toString() form (e.g. "spa-time") - written via
+            // printRecord(args.mode, ...) in AbstractProfiler. Parse it the same way the --mode
+            // CLI flag does instead of the raw enum name.
+            mode = new ModeConverter("mode").convert(header.get(0));
             if (args.mode != mode)
                 throw new UnsupportedOperationException(String.format(
                         "Visualisation executed in %s mode but CSV was generated in %s mode.", args.mode, mode));
