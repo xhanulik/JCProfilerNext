@@ -223,7 +223,7 @@ public class Instrumenter {
                             spoon.addInputResource(args.customPM.toString());
                             continue;
                         case memory:
-                            actualFilename = args.mode + "/" + className;
+                            actualFilename = args.mode.name() + "/" + className;
 
                             // support newer JCSystem.getAvailableMemory overloads
                             final boolean hasNewerAPI =
@@ -239,10 +239,10 @@ public class Instrumenter {
                             actualFilename += (useNewerAPI ? "-new" : "-old") + ".java";
                             break;
                         case time:
-                            actualFilename = args.mode + "/" + className + ".java";
+                            actualFilename = args.mode.name() + "/" + className + ".java";
                             break;
                         case spa_time:
-                            actualFilename = args.mode + "/" + className + ".java";
+                            actualFilename = args.mode.name() + "/" + className + ".java";
                             break;
                         default:
                             throw new RuntimeException("Unreachable statement reached!");

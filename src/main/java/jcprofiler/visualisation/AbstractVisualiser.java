@@ -269,6 +269,7 @@ public abstract class AbstractVisualiser {
         context.put("inputs", inputs.stream().map(s -> "'" + s + "'").collect(Collectors.toList()));
         context.put("measurements", measurements);
         context.put("mode", args.mode);
+        context.put("modeName", args.mode.name());
 
         // add mode specific stuff
         prepareVelocityContext(context);
