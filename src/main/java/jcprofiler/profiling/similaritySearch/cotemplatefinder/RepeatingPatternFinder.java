@@ -1,206 +1,295 @@
-// SPDX-FileCopyrightText: 2019-2026 Martin Podhora (martinftlsx)
 // SPDX-FileCopyrightText: 2025-2026 Veronika Hanulikova <xhanulik@gmail.com>
-// SPDX-License-Identifier: MIT
-
-/**
- * This file is copied from the SPA-Cryptographic-Operations-Extractor,
- * originally developed by Martin Podhora (https://github.com/crocs-muni/SPA-Cryptographic-Operations-Extractor),
- * and licensed under MIT license.
- *
- * Original code licensed under the MIT License:
- * Copyright (c) 2019 martinftlsx
- *
- * Modifications:
- * Copyright (c) 2026 Veronika Hanulikova
- *
- * Licensed under the MIT License.
- * See LICENSES/MIT.txt and THIRD_PARTY_NOTICES.txt for details.
- *
- * This file is distributed as part of a larger project (JCProfilerNext),
- * which is licensed under the GNU General Public License v3.0.
- * See LICENSE.txt for full licensing information.
- */
+// SPDX-License-Identifier: GPL-3.0-only
 
 package jcprofiler.profiling.similaritySearch.cotemplatefinder;
 
+import jcprofiler.profiling.similaritySearch.Similarity;
+import jcprofiler.profiling.similaritySearch.SimilaritySearchController;
 import jcprofiler.profiling.similaritySearch.models.Trace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.SortedSet;
 
 /**
- * Given a calibration trace known to contain {@code k} consecutive, back-to-back repeats of one
- * sub-operation of unknown duration, finds the best-correlated repeat width and offset (using
- * the unmodified {@link MaskTemplateSearch}/{@link CorrelationComputer} CO Template Finder
- * algorithm) and slices out one real, raw occurrence of that sub-operation.
+ * Given a calibration trace known to contain {@code k} occurrences of one delimiter operation
+ * (scattered anywhere in the trace, not necessarily contiguous, evenly spaced, or separated by
+ * idle time), finds and extracts one real, raw occurrence of that operation.
  * <p>
- * The pieces that make this different from the original CO Template Finder module are new,
- * not part of the ported algorithm:
+ * Neither of two simpler approaches tried first held up against real captures:
  * <ul>
- *     <li>the original always searched a pre-known list of candidate durations read from a JSON
- *     configuration; here only {@code k} is known, so a range of candidate sample-widths is
- *     scanned instead, derived from the calibration trace's length and {@code k};</li>
- *     <li>each candidate width is first searched with a coarse window stride scaled to that
- *     width, then the single best candidate is re-searched at full (1-sample) resolution in a
- *     small neighborhood around the coarse hit. Real calibration traces are captured with the
- *     same acquisition window as any other measurement (millions of samples), while a single
- *     repeat is typically a tiny fraction of that - searching every window position at every
- *     candidate width (as the original config-driven search did, for a handful of pre-known
- *     widths) is computationally intractable at that scale, so this coarse-to-fine search keeps
- *     the total cost roughly independent of the trace length;</li>
- *     <li>the original's own output is a de-noised average across all {@code k} occurrences
- *     ({@code createAverageTemplates}/{@code createMaskTemplate}); this returns one real,
- *     unaveraged occurrence instead.</li>
+ *     <li>the CO Template Finder's mask/width-correlation search
+ *     ({@link MaskTemplateSearch}/{@link CorrelationComputer}, kept elsewhere in this package)
+ *     assumes the {@code k} repeats are packed back-to-back with nothing else in the trace -
+ *     real captures are typically mostly dead time before/after the actual activity, and a flat
+ *     stretch trivially "self-correlates" well (every window of it looks alike simply because
+ *     there's no signal there), so the search can lock onto idle time instead of the delimiter;</li>
+ *     <li>segmenting the trace into activity "bursts" by local variance and grouping them by
+ *     duration assumes idle time actually separates individual delimiter occurrences - in
+ *     practice the code between occurrences can be just as continuously active as the delimiter
+ *     itself, so the whole active region merges into one burst instead of {@code k} of them.</li>
  * </ul>
+ * Both approaches also share a deeper problem: correlation/self-similarity alone cannot tell the
+ * delimiter apart from any other structure that also happens to repeat, e.g. the very operation
+ * being profiled - the same input is measured repeatedly, so the code between delimiter
+ * occurrences can look similar from one repeat to the next too.
+ * <p>
+ * This instead reuses {@link SimilaritySearchController#searchTraceForOperation}, the same
+ * Manhattan-distance top-{@code k} matcher {@code SpaTimeProfiler.extractTimes} already relies
+ * on to locate a *known* delimiter template later - which is already proven to correctly find
+ * all {@code k} real occurrences once given the right template. The problem this class solves is
+ * only where that template comes from in the first place:
+ * <ol>
+ *     <li>sweep a wide, geometrically-spaced range of candidate widths, since neither the
+ *     delimiter's duration nor its electrical shape is known in advance;</li>
+ *     <li>for each candidate width, cheaply pick one plausible occurrence: the single window of
+ *     that width with the highest variance anywhere in the trace (a real operation should stand
+ *     out from its surroundings somewhat, even if not enough to cleanly separate every
+ *     occurrence via a hard threshold as burst segmentation needed);</li>
+ *     <li>use that window as a candidate template and run the proven matcher to find its best
+ *     {@code k} matches. The quality of that result is what actually distinguishes the correct
+ *     width, unlike a raw correlation score: at the true delimiter width, all {@code k} matches
+ *     should be genuinely similar (since {@code k} real occurrences exist); at, say, the width of
+ *     the delimiter plus the following profiled code, there are only as many true matches as
+ *     there are trap boundaries - far fewer than {@code k} - so the matcher is forced to include
+ *     much poorer matches to fill the requested count, and that shows up directly as a much
+ *     worse worst-of-{@code k} distance;</li>
+ *     <li>among candidate widths whose worst-of-{@code k} distance (normalized per sample, so
+ *     widths are comparable) is close to the best found, prefer the smallest - a delimiter is
+ *     presumably a compact, deliberately-chosen marker, not the entire operation under test.</li>
+ * </ol>
  *
  * @author Veronika Hanulikova
  */
 public class RepeatingPatternFinder {
     private static final Logger log = LoggerFactory.getLogger(RepeatingPatternFinder.class);
 
-    private static final char PATTERN_CHARACTER = 'A';
-    private static final double WIDTH_RANGE_MARGIN = 0.5;
-    private static final int WIDTH_RANGE_STEPS = 50;
+    private static final int MIN_WIDTH = 10;
+    // Candidate widths are swept from MIN_WIDTH up to half the trace length, so there's room for
+    // at least two non-overlapping occurrences of the largest candidate.
+    private static final double WIDTH_GROWTH_FACTOR = 1.4;
 
-    // Coarse window stride, as a fraction of the candidate width being tested. Smaller is safer
-    // (less likely to step over a narrow correlation peak) but proportionally slower.
-    private static final double COARSE_STRIDE_FRACTION = 0.25;
+    // A candidate's normalized worst-of-k distance must be at least this much better than its
+    // background (random-pair) distance to be considered a match at all, regardless of width.
+    private static final double MAX_ACCEPTABLE_SCORE = 0.5;
+
+    // Number of non-overlapping local variance maxima tried as candidate positions per width.
+    private static final int POSITIONS_PER_WIDTH = 3;
+
+    // To confirm a candidate is distinctly k-occurring (not just short/generic enough to match
+    // many more places than that), this many matches beyond k are also requested, and the
+    // (k + CLIFF_EXTRA_MATCHES)-th distance must be at least CLIFF_RATIO_THRESHOLD times the
+    // k-th - i.e. there must be a clear quality drop-off right after the k good matches run out.
+    private static final int CLIFF_EXTRA_MATCHES = 5;
+    private static final double CLIFF_RATIO_THRESHOLD = 3.0;
+
+    private static class Candidate {
+        final int width;
+        final int position;
+        final double normalizedScore;
+
+        Candidate(int width, int position, double normalizedScore) {
+            this.width = width;
+            this.position = position;
+            this.normalizedScore = normalizedScore;
+        }
+    }
 
     /**
-     * Extracts one real, raw occurrence of the sub-operation that repeats {@code k} times,
-     * back-to-back, inside {@code calibrationTrace}.
+     * Extracts one real, raw occurrence of the delimiter operation that occurs {@code k} times
+     * somewhere inside {@code calibrationTrace}.
      *
-     * @param calibrationTrace trace containing exactly {@code k} consecutive repeats of one
-     *                         unknown-duration sub-operation and nothing else
-     * @param k                number of consecutive repeats in {@code calibrationTrace}
-     * @return a new {@link Trace} holding the raw samples of one clean occurrence
+     * @param calibrationTrace trace containing {@code k} occurrences of one delimiter operation
+     * @param k                number of delimiter occurrences in {@code calibrationTrace}
+     * @return a new {@link Trace} holding the raw samples of one occurrence
      */
     public static Trace extractOneOccurrence(Trace calibrationTrace, int k) throws InterruptedException {
         if (k <= 0) {
             throw new IllegalArgumentException("k must be positive, was " + k);
         }
         if (calibrationTrace.getDataCount() < k) {
-            throw new IllegalArgumentException("Calibration trace is too short to contain " + k + " repeats");
+            throw new IllegalArgumentException("Calibration trace is too short to contain " + k + " occurrences");
         }
 
-        char[] mask = new char[k];
-        Arrays.fill(mask, PATTERN_CHARACTER);
+        int n = calibrationTrace.getDataCount();
         double[] voltage = calibrationTrace.getVoltage();
+        double[] prefixSum = new double[n + 1];
+        double[] prefixSumSq = new double[n + 1];
+        for (int i = 0; i < n; i++) {
+            prefixSum[i + 1] = prefixSum[i] + voltage[i];
+            prefixSumSq[i + 1] = prefixSumSq[i] + voltage[i] * voltage[i];
+        }
 
-        MaskTemplateSearch maskTemplateSearch = new MaskTemplateSearch();
-        MaskTemplateSearch.SearchResult best = null;
-        int bestCoarseTakeNth = 1;
-        int candidateNumber = 0;
-        List<Integer> widths = candidateWidths(calibrationTrace.getDataCount(), k);
-        log.info("Searching for a {}-times repeating pattern across {} candidate widths ({}..{} samples)",
-                k, widths.size(), widths.isEmpty() ? 0 : widths.get(0), widths.isEmpty() ? 0 : widths.get(widths.size() - 1));
+        List<Integer> widths = geometricWidths(n);
+        log.info("Testing {} candidate widths from {} to {} samples", widths.size(), widths.get(0), widths.get(widths.size() - 1));
 
+        List<Candidate> candidates = new ArrayList<>();
         for (int width : widths) {
-            candidateNumber++;
-            int coarseTakeNth = Math.max(1, (int) (width * COARSE_STRIDE_FRACTION));
-            HashMap<Character, Integer> characterWidths = new HashMap<>();
-            characterWidths.put(PATTERN_CHARACTER, width);
+            for (int position : localMaximumVariancePositions(prefixSum, prefixSumSq, n, width, POSITIONS_PER_WIDTH)) {
+                Trace candidateTemplate = sliceOccurrence(calibrationTrace, new IntRange(position, position + width));
 
-            MaskTemplateSearch.SearchResult result = maskTemplateSearch.search(voltage, mask, characterWidths, coarseTakeNth);
-            log.debug("Candidate width {}/{}: {} samples, stride {} -> {}",
-                    candidateNumber, widths.size(), width, coarseTakeNth,
-                    result == null ? "does not fit" : "correlation " + result.correlationValue);
-            if (result != null && (best == null || result.correlationValue > best.correlationValue)) {
-                best = result;
-                bestCoarseTakeNth = coarseTakeNth;
+                SortedSet<Similarity> matches;
+                try {
+                    matches = SimilaritySearchController.searchTraceForOperation(
+                            calibrationTrace, candidateTemplate, SimilaritySearchController.MANHATTAN_DISTANCE_ALGORITHM, k + CLIFF_EXTRA_MATCHES);
+                } catch (RuntimeException e) {
+                    log.debug("Width {} at {}: candidate search failed ({}), skipping", width, position, e.getMessage());
+                    continue;
+                }
+
+                if (matches.size() < k) {
+                    log.debug("Width {} at {}: only found {} of {} matches, skipping", width, position, matches.size(), k);
+                    continue;
+                }
+
+                List<Similarity> sortedMatches = new ArrayList<>(matches);
+                double kthDistance = sortedMatches.get(k - 1).getDistance();
+
+                // If there really are only k genuine occurrences, asking for a few more than k
+                // should turn up noticeably worse matches past the k-th - a "cliff". Without that
+                // cliff, this candidate isn't distinctly k-occurring: either it's short/generic
+                // enough to also match plenty of unrelated places (undercounting the true
+                // duration), or it doesn't correspond to a real repeating operation at all.
+                if (sortedMatches.size() >= k + CLIFF_EXTRA_MATCHES) {
+                    double extraDistance = sortedMatches.get(k - 1 + CLIFF_EXTRA_MATCHES).getDistance();
+                    double cliffRatio = kthDistance <= 0 ? Double.POSITIVE_INFINITY : extraDistance / kthDistance;
+                    if (cliffRatio < CLIFF_RATIO_THRESHOLD) {
+                        log.debug("Width {} at {}: no quality cliff after match {} (ratio {}), skipping",
+                                width, position, k, cliffRatio);
+                        continue;
+                    }
+                }
+
+                double background = backgroundDistance(voltage, width, position);
+                if (background <= 0) {
+                    continue;
+                }
+                double normalizedScore = kthDistance / background;
+                log.debug("Width {} at {}: worst-of-{} distance {}, background distance {}, normalized score {}",
+                        width, position, k, kthDistance, background, normalizedScore);
+                candidates.add(new Candidate(width, position, normalizedScore));
             }
         }
 
-        if (best == null) {
-            throw new IllegalStateException("No candidate width fit inside the calibration trace");
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException(
+                    "No candidate width found " + k + " sufficiently similar occurrences in the calibration trace");
         }
 
-        log.info("Best coarse match: width {}, correlation {}, refining locally", best.wholeTemplateSize / k, best.correlationValue);
-        MaskTemplateSearch.SearchResult refined = refine(voltage, mask, best, bestCoarseTakeNth, maskTemplateSearch);
-        return sliceFirstOccurrence(calibrationTrace, refined);
+        // Any sub-window of a genuinely k-occurring operation is itself contained in all k
+        // occurrences, so it trivially also passes the cliff check above - a single short,
+        // distinctive edge inside the delimiter can look just as cleanly "k-occurring" as the
+        // whole thing. That means the smallest passing candidate is not a safe choice; the
+        // largest one that still passes is, since growing past the delimiter's real extent (into
+        // whatever comes next, which differs from occurrence to occurrence) is exactly what
+        // should eventually break the cliff.
+        Candidate chosen = candidates.stream()
+                .filter(c -> c.normalizedScore <= MAX_ACCEPTABLE_SCORE)
+                .max(Comparator.<Candidate>comparingInt(c -> c.width).thenComparing(c -> -c.normalizedScore))
+                .orElseThrow(() -> new IllegalStateException(
+                        "No candidate width found " + k + " occurrences with a convincing enough match quality"));
+
+        log.info("Chosen occurrence: width {} at position {} (normalized score {})",
+                chosen.width, chosen.position, chosen.normalizedScore);
+        return sliceOccurrence(calibrationTrace, new IntRange(chosen.position, chosen.position + chosen.width));
     }
 
-    /**
-     * Candidate per-repeat sample-widths to search, centered on the naive
-     * {@code dataCount / k} estimate with a margin either side, since the real duration is
-     * unknown.
-     */
-    private static List<Integer> candidateWidths(int dataCount, int k) {
-        int centerWidth = Math.max(1, dataCount / k);
-        int minWidth = Math.max(1, (int) (centerWidth * (1 - WIDTH_RANGE_MARGIN)));
-        // maxWidth is intentionally allowed to exceed dataCount / k: MaskTemplateSearch.search
-        // returns null for any width that doesn't fit k repeats inside the trace, so candidates
-        // above the naive estimate are simply skipped rather than needing to be excluded here.
-        int maxWidth = (int) (centerWidth * (1 + WIDTH_RANGE_MARGIN));
-        int step = Math.max(1, (maxWidth - minWidth) / WIDTH_RANGE_STEPS);
+    // Number of unrelated windows sampled to estimate the "typical" (background) distance for a
+    // given width - i.e. how similar two random windows of that width tend to be anyway. Without
+    // this, raw Manhattan distance shrinks with width regardless of whether a match means
+    // anything: a tiny window can look deceptively "well matched" almost everywhere simply
+    // because there's very little data for two windows to differ over, not because it captured
+    // anything real. Scoring against this per-width background instead of the raw distance is
+    // what makes scores comparable across widths.
+    private static final int BACKGROUND_SAMPLE_COUNT = 30;
 
+    private static double backgroundDistance(double[] voltage, int width, int excludePosition) {
+        double[] template = Arrays.copyOfRange(voltage, excludePosition, excludePosition + width);
+        int n = voltage.length;
+        int lastStart = n - width;
+        if (lastStart <= 0) {
+            return Double.NaN;
+        }
+        int step = Math.max(1, lastStart / BACKGROUND_SAMPLE_COUNT);
+
+        List<Double> distances = new ArrayList<>();
+        for (int pos = 0; pos <= lastStart; pos += step) {
+            if (Math.abs(pos - excludePosition) < width) {
+                continue;
+            }
+            distances.add(SimilaritySearchController.MANHATTAN_DISTANCE_ALGORITHM.compute(template, voltage, pos));
+        }
+        if (distances.isEmpty()) {
+            return Double.NaN;
+        }
+        Collections.sort(distances);
+        return distances.get(distances.size() / 2);
+    }
+
+    private static List<Integer> geometricWidths(int dataCount) {
+        int maxWidth = Math.max(MIN_WIDTH + 1, dataCount / 2);
         List<Integer> widths = new ArrayList<>();
-        for (int width = minWidth; width <= maxWidth; width += step) {
-            widths.add(width);
+        double width = MIN_WIDTH;
+        while ((int) width <= maxWidth) {
+            widths.add((int) width);
+            width *= WIDTH_GROWTH_FACTOR;
         }
         return widths;
     }
 
-    // Factor by which the refinement stride shrinks each round. A single jump straight from the
-    // coarse stride to 1-sample resolution would still mean re-scanning a neighborhood sized by
-    // the (large) coarse stride at full (width * k) cost per position - which can cost more than
-    // the entire coarse scan. Instead, each round only has to search a small, constant number of
-    // positions (about REFINEMENT_FACTOR * 2) at the new, finer stride, so the total refinement
-    // cost stays bounded regardless of how coarse the very first stride was.
-    private static final int REFINEMENT_FACTOR = 4;
-
     /**
-     * Repeatedly halves/quarters the window stride, each round re-searching only a small
-     * neighborhood around the current best hit at that finer stride, until reaching full
-     * (1-sample) resolution. This recovers the exact offset the coarse stride may have stepped
-     * over, without ever re-scanning a large window range at full resolution.
+     * Finds up to {@code count} non-overlapping windows of the given width with the highest
+     * variance, using prefix sums so computing variance at every position only costs one O(n)
+     * pass. The single highest-variance window alone is not reliable: a one-off event (like the
+     * trace's own idle-to-active transition) can have higher variance than any individual,
+     * genuinely-repeating occurrence, especially at larger widths where it dominates the window.
+     * Picking several non-overlapping peaks instead means one such one-off event can knock out at
+     * most one of them, leaving the others free to land on real occurrences.
      */
-    private static MaskTemplateSearch.SearchResult refine(
-            double[] voltage,
-            char[] mask,
-            MaskTemplateSearch.SearchResult coarse,
-            int coarseTakeNth,
-            MaskTemplateSearch maskTemplateSearch) throws InterruptedException {
-        HashMap<Character, Integer> characterWidths = new HashMap<>();
-        characterWidths.put(PATTERN_CHARACTER, coarse.wholeTemplateSize / mask.length);
-
-        MaskTemplateSearch.SearchResult current = coarse;
-        int stride = coarseTakeNth;
-        while (stride > 1) {
-            int nextStride = Math.max(1, stride / REFINEMENT_FACTOR);
-            // the true optimum is within one stride of the previous round's hit
-            int margin = stride;
-            int sliceStart = Math.max(0, current.windowIndex - margin);
-            int sliceEnd = Math.min(voltage.length, current.windowIndex + margin + current.wholeTemplateSize);
-            double[] slice = Arrays.copyOfRange(voltage, sliceStart, sliceEnd);
-
-            MaskTemplateSearch.SearchResult refined = maskTemplateSearch.search(slice, mask, characterWidths, nextStride);
-            if (refined != null) {
-                current = new MaskTemplateSearch.SearchResult(
-                        sliceStart + refined.windowIndex,
-                        refined.correlationValue,
-                        refined.wholeTemplateSize,
-                        refined.intervals);
-            } else {
-                log.warn("Refinement round at stride {} failed unexpectedly, keeping the previous hit", nextStride);
-            }
-            stride = nextStride;
+    private static List<Integer> localMaximumVariancePositions(double[] prefixSum, double[] prefixSumSq, int n, int width, int count) {
+        int lastStart = n - width;
+        if (lastStart < 0) {
+            return List.of();
         }
 
-        return current;
+        double[] variances = new double[lastStart + 1];
+        for (int start = 0; start <= lastStart; start++) {
+            double sum = prefixSum[start + width] - prefixSum[start];
+            double sumSq = prefixSumSq[start + width] - prefixSumSq[start];
+            double mean = sum / width;
+            variances[start] = sumSq / width - mean * mean;
+        }
+
+        boolean[] excluded = new boolean[lastStart + 1];
+        List<Integer> positions = new ArrayList<>();
+        for (int pick = 0; pick < count; pick++) {
+            int bestStart = -1;
+            double bestVariance = Double.NEGATIVE_INFINITY;
+            for (int start = 0; start <= lastStart; start++) {
+                if (!excluded[start] && variances[start] > bestVariance) {
+                    bestVariance = variances[start];
+                    bestStart = start;
+                }
+            }
+            if (bestStart == -1) {
+                break;
+            }
+            positions.add(bestStart);
+            int exclusionFrom = Math.max(0, bestStart - width);
+            int exclusionTo = Math.min(lastStart, bestStart + width);
+            Arrays.fill(excluded, exclusionFrom, exclusionTo + 1, true);
+        }
+        return positions;
     }
 
-    private static Trace sliceFirstOccurrence(Trace calibrationTrace, MaskTemplateSearch.SearchResult result) {
-        IntRange firstOccurrence = result.intervals.get(PATTERN_CHARACTER).get(0);
-        int firstIndex = result.windowIndex + firstOccurrence.getFirstIndex();
-        int lastIndex = result.windowIndex + firstOccurrence.getLastIndex();
-
-        double[] voltage = Arrays.copyOfRange(calibrationTrace.getVoltage(), firstIndex, lastIndex);
-        double[] time = Arrays.copyOfRange(calibrationTrace.getTime(), firstIndex, lastIndex);
+    private static Trace sliceOccurrence(Trace trace, IntRange occurrence) {
+        double[] voltage = Arrays.copyOfRange(trace.getVoltage(), occurrence.getFirstIndex(), occurrence.getLastIndex());
+        double[] time = Arrays.copyOfRange(trace.getTime(), occurrence.getFirstIndex(), occurrence.getLastIndex());
 
         double voltageMaximum = Double.NEGATIVE_INFINITY;
         double voltageMinimum = Double.POSITIVE_INFINITY;
@@ -209,13 +298,6 @@ public class RepeatingPatternFinder {
             if (v < voltageMinimum) voltageMinimum = v;
         }
 
-        return new Trace(
-                calibrationTrace.getVoltageUnit(),
-                calibrationTrace.getTimeUnit(),
-                voltage.length,
-                voltage,
-                time,
-                voltageMaximum,
-                voltageMinimum);
+        return new Trace(trace.getVoltageUnit(), trace.getTimeUnit(), voltage.length, voltage, time, voltageMaximum, voltageMinimum);
     }
 }
