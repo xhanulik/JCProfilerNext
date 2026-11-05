@@ -31,6 +31,8 @@ import java.util.*;
 public class TimeProfiler extends AbstractProfiler {
     // use LinkedHashX to preserve insertion order
     private final Map<String, List<Long>> measurements = new LinkedHashMap<>();
+    // status word the operation ended with in each round (--accept-error-sw), "-" if every trap was reached
+    private final List<String> roundSWs = new ArrayList<>();
 
     private static final Logger log = LoggerFactory.getLogger(TimeProfiler.class);
 
@@ -116,8 +118,17 @@ public class TimeProfiler extends AbstractProfiler {
     private void profileSingleStep(CommandAPDU triggerAPDU) throws CardException {
         long prevTransmitDuration = 0;
         long currentTransmitDuration;
+        String endSW = "-";
 
         for (short trapID : trapNameMap.keySet()) {
+            // setup APDUs run with no trap set, so code they share with the profiled method
+            // cannot stop at one; they are repeated for every trap because the trigger APDU
+            // may consume the state they build
+            if (!setupAPDUs.isEmpty()) {
+                setTrap(PERF_START);
+                sendSetupAPDUs();
+            }
+
             // set performance trap
             setTrap(trapID);
 
@@ -130,9 +141,14 @@ public class TimeProfiler extends AbstractProfiler {
             final int SW = response.getSW();
             if (SW != Short.toUnsignedInt(trapID)) {
                 // unknown SW returned
-                if (SW != JCProfilerUtil.SW_NO_ERROR)
+                if (SW != JCProfilerUtil.SW_NO_ERROR && !args.acceptErrorSW)
                     throw new RuntimeException(String.format(
                             "Unexpected SW received when profiling trap %s: %s", trapName, Integer.toHexString(SW)));
+
+                // the operation ended (successfully, or with an error SW under --accept-error-sw)
+                // before this trap
+                if (endSW.equals("-"))
+                    endSW = String.format("%04X", SW);
 
                 // we have not reached expected performance trap
                 unreachedTraps.add(trapName);
@@ -154,6 +170,7 @@ public class TimeProfiler extends AbstractProfiler {
             // free memory after command
             resetApplet();
         }
+        roundSWs.add(endSW);
     }
 
     /**
@@ -165,6 +182,8 @@ public class TimeProfiler extends AbstractProfiler {
      */
     @Override
     protected void saveMeasurements(final CSVPrinter printer) throws IOException {
+        // as a comment, so readers that take every record after the inputs as a trap still work
+        printer.printComment("sw," + String.join(",", roundSWs));
         printer.printComment("trapName,measurement1,measurement2,...");
         for (final Map.Entry<String, List<Long>> e : measurements.entrySet()) {
             printer.print(e.getKey());

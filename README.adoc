@@ -123,6 +123,32 @@ produced by JCProfilerNext, you will see that some parts of the code are indeed
 not constant, namely if you inspect the corresponding histograms of traps
 after the `for` loops.
 
+Setup commands and error status words (time mode)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some methods can only be reached after other commands have built the applet's
+state (a PIN verified, a key generated, a session opened). `--setup-file FILE`
+takes a file with one command APDU in hex per line (blank lines and lines
+starting with `#` are skipped). The APDUs are sent before every measured APDU,
+with no trap set, so code they share with the profiled method cannot stop at a
+trap. Each must return `9000`, otherwise profiling fails.
+
+By default a status word other than `9000` or the expected trap ID aborts the
+run. With `--accept-error-sw`, such a status word ends the round instead: the
+remaining traps count as unreached, and the traps before it are measured, which
+times the error path (e.g. a rejected PIN). Either way, the status word each
+round ended with is stored in `measurements.csv` as the comment
+`# sw,<round1>,<round2>,...` (`-` when every trap was reached).
+
+[source,console]
+----
+$ ./gradlew run --args="--work-dir example --jckit jc222_kit --executable example --ins 0xEE --data-file inputs.txt --repeat-count 100 --setup-file setup.txt --accept-error-sw"
+----
+
+Both options are supported in time mode only. The applet is not reinstalled
+between rounds, so state the measured command changes persists into the next
+round (e.g. a PIN retry counter).
+
 Memory Example
 ~~~~~~~~~~~~~~
 Consider the following source code:

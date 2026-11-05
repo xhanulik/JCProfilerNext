@@ -137,6 +137,17 @@ public class Args {
                converter = FilePathConverter.class)
     public Path dataFile;
 
+    @Parameter(names = {"--setup-file"},
+               description = "Path to a file with command APDUs in hex, one per line, sent before every " +
+                             "measured APDU; each must return 9000 (time profiling only)",
+               converter = FilePathConverter.class)
+    public Path setupFile;
+
+    @Parameter(names = {"--accept-error-sw"},
+               description = "Treat a status word other than 9000 or the trap ID as the end of the operation " +
+                             "(later traps unreached) instead of failing (time profiling only)")
+    public boolean acceptErrorSW = false;
+
     @Parameter(names = {"--input-division"},
                description = "Divide generated inputs into two categories based on given characteristic",
                converter = InputDivisionConverter.class)

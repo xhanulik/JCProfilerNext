@@ -121,6 +121,11 @@ public class Main {
             }
         }
 
+        // validate --setup-file and --accept-error-sw
+        if ((args.setupFile != null || args.acceptErrorSW) && args.mode != Mode.time)
+            throw new UnsupportedOperationException(
+                    "Options --setup-file and --accept-error-sw are supported in time mode only!");
+
         // validate --data-regex and --data-file
         if ((args.dataRegex == null) == (args.dataFile == null)) {
             if (args.dataRegex != null)

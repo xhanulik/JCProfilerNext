@@ -101,6 +101,11 @@ public abstract class AbstractProfiler {
      */
     protected final List<String> auxInputs = new ArrayList<>();
 
+    /**
+     * Command APDUs from {@link Args#setupFile}, sent before every measured APDU
+     */
+    protected final List<CommandAPDU> setupAPDUs = new ArrayList<>();
+
     private String elapsedTime;
 
     private static final Logger log = LoggerFactory.getLogger(AbstractProfiler.class);
@@ -139,6 +144,52 @@ public abstract class AbstractProfiler {
         profiledExecutableSignature = JCProfilerUtil.getFullSignature(executable);
 
         buildPerfMapping();
+        loadSetupAPDUs();
+    }
+
+    /**
+     * Populates {@link #setupAPDUs} from {@link Args#setupFile}: one command APDU in hex per line,
+     * blank lines and lines starting with '#' are skipped.
+     *
+     * @throws RuntimeException if the file cannot be read or a line is not a valid command APDU
+     */
+    private void loadSetupAPDUs() {
+        if (args.setupFile == null)
+            return;
+
+        try {
+            final List<String> lines = Files.readAllLines(args.setupFile);
+            for (int i = 1; i <= lines.size(); i++) {
+                final String line = lines.get(i - 1).trim();
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
+                if (!JCProfilerUtil.isHexString(line) || line.length() < 8)
+                    throw new RuntimeException(String.format(
+                            "Setup APDU %s on line %d in file %s is not a valid command APDU in hex!",
+                            line, i, args.setupFile));
+                setupAPDUs.add(new CommandAPDU(Util.hexStringToByteArray(line)));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("Loaded {} setup APDU(s) from {}.", setupAPDUs.size(), args.setupFile);
+    }
+
+    /**
+     * Sends the setup APDUs from {@link Args#setupFile}.
+     *
+     * @throws CardException    if the card connection failed
+     * @throws RuntimeException if a setup APDU did not return 9000
+     */
+    protected void sendSetupAPDUs() throws CardException {
+        for (int i = 0; i < setupAPDUs.size(); i++) {
+            final CommandAPDU apdu = setupAPDUs.get(i);
+            final ResponseAPDU response = cardTarget.transmit(apdu);
+            if (response.getSW() != JCProfilerUtil.SW_NO_ERROR)
+                throw new RuntimeException(String.format(
+                        "Setup APDU %d (%s) failed with SW %s", i + 1, Util.bytesToHex(apdu.getBytes()),
+                        Integer.toHexString(response.getSW())));
+        }
     }
 
     /**
